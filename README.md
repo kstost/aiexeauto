@@ -1,4 +1,4 @@
-`# aiexeauto
+# aiexeauto
 
 aiexeauto는 다양한 AI 언어 모델을 활용하여 자연어 명령을 분석하고 최적의 JavaScript 코드를 자동 생성하여 실행하는 Node.js 애플리케이션입니다. WebContainer 기반의 안전한 샌드박스 환경에서 로컬 데이터를 독립적으로 분석하고 처리하며, 실행 결과를 스스로 검증하고 개선하여 주어진 작업을 완수합니다.
 
