@@ -36,7 +36,6 @@ out/
 # 프로젝트 특정 파일/폴더
 data-output/
 tasks/*/output/
-package.json
 !config.json
 
 # Docker 관련
