@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+    <script type="module">
+        import { WebContainer } from 'https://unpkg.com/@webcontainer/api@1.4.0/dist/index.js';
+        window._electrons = {};
+        window._webcontainer = null;
+        window._electrons.boot = async function () {
+            if (window._webcontainer) return;
+            window._webcontainer = await WebContainer.boot();
+            return window._webcontainer;
+        }
+        window._electrons.mount = async function (filename, contents_as_base64) {
+            await window._webcontainer.mount({
+                [filename]: {
+                    file: {
+                        contents: contents_as_base64
+                    }
+                },
+            });
+        }
+        window._electrons.spawn = async function (command, args) {
+            const process = await window._webcontainer.spawn(command, args);
+            let output = '';
+            process.output.pipeTo(new WritableStream({
+                write(data) {
+                    output += data;
+                }
+            }));
+            const code = await process.exit;
+            return { output, code };
+        }
+        window.addEventListener('load', () => {
+            window.appReady = true;
+        });
+    </script>
+</head>
+
+<body>
+    <pre id="output"></pre>
+</body>
+
+</html>

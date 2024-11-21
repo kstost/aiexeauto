@@ -1,0 +1,15 @@
+export const config = {
+    openaiApiKey: "",
+    groqApiKey: "",
+    geminiApiKey: "",
+    claudeApiKey: "",
+    model: "claude-3-5-haiku-20241022",
+    llm: "claude",
+    maxIterations: 0,
+    threeBackticks: '```',
+    useFirstPlan: false,
+    dockerImage: 'my-node-ubuntu',
+    useDocker: true,
+    useEvaluation: false,
+    dockerWorkDir: '/home/ubuntu/work',
+}
