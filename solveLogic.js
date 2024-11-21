@@ -509,6 +509,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
         server.close();
         if (spinners.cleanup) {
             spinners.cleanup.succeed('모든 작업이 완료되었습니다.');
+            console.log(chalk.green(`결과물이 저장된 경로: ${chalk.bold(dataOutputPath)}`));            
         }
     } catch (err) {
         // 현재 실행 중인 모든 스피너 중지
