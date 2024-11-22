@@ -14,9 +14,6 @@ import { config } from './config.js';
 import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, runNodeJSCode, doesDockerImageExist } from './docker.js';
 import fs from 'fs';
 
-// Setting __dirname (In ESM, you need to set it manually)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 let containerId;
 let spinners = {};
 
@@ -211,10 +208,6 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 throw new Error(`도커 이미지 ${config.dockerImage}가 존재하지 않습니다.`);
             }
             containerId = await runDockerContainerDemon(config.dockerImage);
-        }
-        if (false && config.log) {
-            const aiLogFolder = './log.ai';
-            fs.rmSync(aiLogFolder, { recursive: true, force: true });
         }
         let browser, page;
 

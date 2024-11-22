@@ -3,7 +3,7 @@ import { promisify } from 'util';
 import fs from 'fs';
 import { spawn, spawnSync } from 'child_process';
 import { config } from './config.js';
-import { getAbsolutePath } from './system.js';
+import { getAbsolutePath, getAppPath } from './system.js';
 
 export async function executeInContainer(containerId, command) {
     if (command.includes('"')) {
@@ -15,7 +15,7 @@ export async function executeInContainer(containerId, command) {
             error: new Error('쌍따옴표는 허용되지 않습니다')
         };
     }
-    return await executeCommand('docker exec ' + containerId + ' /bin/sh -c "' + command + '"')
+    return await executeCommand('docker exec "' + containerId + '" /bin/sh -c "' + command + '"')
 }
 
 function parseCommandLine(cmdline) {
@@ -136,7 +136,7 @@ export async function importToDocker(containerId, workDir, inputDir) {
     let result = await executeInContainer(containerId, 'mkdir -p ' + workDir);
     if (result.code !== 0) throw new Error('작업 디렉토리 생성 실패');
 
-    result = await executeCommand('docker cp "' + inputDir + '/." ' + containerId + ':' + workDir);
+    result = await executeCommand('docker cp "' + inputDir + '/." "' + containerId + ':' + workDir + '"');
     if (result.code !== 0) throw new Error('input 폴더 복사 실패');
 }
 
@@ -150,7 +150,6 @@ export async function exportFromDocker(containerId, workDir, outputDir) {
         'package-lock.json', 'package.json'
     ];
 
-    await fs.promises.mkdir(outputDir, { recursive: true });
     let result;
 
     for (const item of removeList) {
@@ -161,12 +160,8 @@ export async function exportFromDocker(containerId, workDir, outputDir) {
     result = await executeInContainer(containerId, `rm -rf ${workDir}/${prefixName}*`);
     if (result.code !== 0) throw new Error('임시 파일 삭제 실패');
 
-    if (fs.existsSync(outputDir)) {
-        await fs.promises.rm(outputDir, { recursive: true, force: true });
-        await fs.promises.mkdir(outputDir);
-    }
 
-    result = await executeCommand('docker cp ' + containerId + ':' + workDir + '/. "' + outputDir + '"');
+    result = await executeCommand('docker cp "' + containerId + ':' + workDir + '/." "' + outputDir + '"');
     if (result.code !== 0) throw new Error('output 폴더로 복사 실패');
 }
 
@@ -187,9 +182,8 @@ export async function runNodeJSCode(containerId, workDir, code, requiredPackageN
         }
 
     }
-    const tmpJsFile = getAbsolutePath('.code_' + Math.random() + '.js');
+    const tmpJsFile = getAppPath('.code_' + Math.random() + '.js');
     const jsFileName = 'AIEXE-data-handling-operation.js';
-
 
     code = [
         `{`,
@@ -202,7 +196,7 @@ export async function runNodeJSCode(containerId, workDir, code, requiredPackageN
     await fs.promises.writeFile(tmpJsFile, code);
 
     {
-        let result = await executeCommand('docker cp ' + tmpJsFile + ' ' + containerId + ':' + workDir + '/' + jsFileName);
+        let result = await executeCommand('docker cp "' + tmpJsFile + '" "' + containerId + ':' + workDir + '/' + jsFileName + '"');
 
         if (result.code !== 0) throw new Error('임시 JS 파일 복사 실패');
     }
@@ -214,10 +208,10 @@ export async function runNodeJSCode(containerId, workDir, code, requiredPackageN
     return result;
 }
 export async function killDockerContainer(containerId) {
-    await executeCommand(`docker kill ${containerId}`);
+    await executeCommand(`docker kill "${containerId}"`);
 }
 export async function runDockerContainerDemon(dockerImage) {
-    let result = await executeCommand(`docker run -d --rm --user ubuntu ${dockerImage} tail -f /dev/null`);
+    let result = await executeCommand(`docker run -d --rm --user ubuntu "${dockerImage}" tail -f /dev/null`);
     if (result.code !== 0) throw new Error('컨테이너 시작 실패');
     return result.stdout.trim();
 }

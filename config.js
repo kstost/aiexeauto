@@ -9,7 +9,8 @@ export const config = {
     threeBackticks: '```',
     useFirstPlan: false,
     dockerImage: 'my-node-ubuntu',
-    useDocker: true,
+    useDocker: false,
     useEvaluation: false,
     dockerWorkDir: '/home/ubuntu/work',
+    overwriteOutputDir: false,
 }

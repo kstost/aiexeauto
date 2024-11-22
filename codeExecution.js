@@ -1,17 +1,5 @@
-import fs from 'fs';
-import express from 'express';
-import path from 'path';
-import puppeteer from 'puppeteer';
-import net from 'net';
-import { importData, exportData } from './dataHandler.js';
-import chalk from 'chalk';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import { chatCompletion } from './aifeatures.js';
 import { config } from './config.js';
-// __dirname 설정 (ESM에서는 직접 설정 필요)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 export function checkValidSyntaxJavascript(code) {
     try {

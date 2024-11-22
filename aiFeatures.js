@@ -1,7 +1,9 @@
 import { config } from './config.js';
+import { getAppPath } from './system.js';
+import fs from 'fs';
+
 async function leaveLog({ callMode, messages }) {
-    if (false && config.log) { }
-    const aiLogFolder = './log.ai';
+    const aiLogFolder = getAppPath('logs');
     if (!fs.existsSync(aiLogFolder)) fs.mkdirSync(aiLogFolder);
     const date = new Date().toISOString().replace(/[:.]/g, '-') + '-' + Date.now();
     let contentToLeave = `## callMode: ${callMode}\n\n`;

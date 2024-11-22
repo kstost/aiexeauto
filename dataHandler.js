@@ -4,7 +4,8 @@ import { fileURLToPath } from 'url';
 import * as tar from 'tar';
 import ora from 'ora';
 import { runDockerContainer, getDockerInfo, importToDocker, exportFromDocker } from './docker.js';
-export async function validateAndCreatePaths(dataSourcePath, dataOutputPath) {
+import { getAppPath } from './system.js';
+export async function validateAndCreatePaths(dataSourcePath) {
     // Validate data source path
     try {
         const sourceStats = fs.statSync(dataSourcePath);
@@ -14,27 +15,12 @@ export async function validateAndCreatePaths(dataSourcePath, dataOutputPath) {
     } catch (err) {
         throw new Error(`Data source path does not exist: ${dataSourcePath}`);
     }
-
-    // Validate and create data output path
-    try {
-        const outputStats = fs.statSync(dataOutputPath);
-        if (!outputStats.isDirectory()) {
-            throw new Error(`Data output path is not a directory: ${dataOutputPath}`);
-        }
-    } catch (err) {
-        try {
-            fs.mkdirSync(dataOutputPath, { recursive: true });
-            console.log('Created data output directory:', dataOutputPath);
-        } catch (mkdirErr) {
-            throw new Error(`Error creating data output directory: ${mkdirErr}`);
-        }
-    }
 }
 
 export async function serializeFolder(folderPath) {
     const CHUNK_SIZE = 1024 * 1024;
     const chunks = [];
-    const tempTarPath = 'AIEXE-data-handling-tmpfile.tar';
+    const tempTarPath = getAppPath('AIEXE-data-handling-tmpfile.tar');
     try {
         await tar.create({ file: tempTarPath, cwd: path.dirname(folderPath) }, [path.basename(folderPath)]);
         const tarContent = await fs.promises.readFile(tempTarPath);
@@ -141,7 +127,6 @@ export async function exportData(page, dataSourcePath, dataOutputPath) {
 
     try {
         spinner.text = '데이터 수집 중...';
-        await fs.promises.rm(dataOutputPath, { recursive: true });
         const dataSourceName = getLastDirectoryName(dataSourcePath);
         const dataOutputName = getLastDirectoryName(dataOutputPath);
         const executeResult = await page.evaluate(async (dataSourceName, dataOutputName) => {

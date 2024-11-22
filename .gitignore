@@ -21,7 +21,6 @@ yarn.lock
 # 로그 파일
 logs/
 *.log
-log.ai/
 
 # 임시 파일
 tmp/
