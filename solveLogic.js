@@ -64,6 +64,8 @@ const prompts = {
         config.useDocker ? '- 필요하다면 child_process로 Ubuntu Linux에 명령을 내릴수 있다.' : '- Linux shell script 사용 금지',
         config.useDocker ? '- sudo 명령어는 사용할 수 없는 시스템이다.' : '- 코드는 매우 제한된 micro computer environment of Ubuntu 22.04 LTS에서 실행되므로 의존성이 높은 패키지는 사용하지 마세요.',
         '- 시각화가 필요한 미션의 경우라면 **반드시** HTML, CSS, JavaScript, D3.js, Chart.js, Highcharts, ECharts, Plotly.js, Vis.js, Three.js, Vega/Vega-Lite, ApexCharts, NVD3, Cytoscape.js, Sigma.js, p5.js, Paper.js, Raphaël, ZingChart 등의 시각화 라이브러리, Bootstrap, Tailwind CSS, Foundation, Materialize 등의 CSS 프레임워크, PapaParse, axios, JSONPlaceholder, Lodash, Moment.js 등의 데이터 처리 도구, JSON, CSV, Excel2JSON, Google Sheets API 등의 데이터 포맷 및 처리 도구, SVG, Canvas API, WebGL 등의 렌더링 기술, GitHub Pages, Netlify, Glitch, CodePen 등의 배포 도구를 활용하여 웹 페이지 형태의 결과물을 생성하고 .html 파일로 저장하세요.',
+        '- 코드는 서버를 켜는 작동하지 말아라',
+        //'- 코드는 입력받는 작동하지 말아라',
         '',
         '출력 형식:',
         '- 설명 없이 소스 코드만 반환하세요.',
