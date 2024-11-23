@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import * as tar from 'tar';
 import ora from 'ora';
 import { runDockerContainer, getDockerInfo, importToDocker, exportFromDocker } from './docker.js';
-import { getAppPath } from './system.js';
+import { getAppPath, getOSPathSeparator } from './system.js';
 export async function validateAndCreatePaths(dataSourcePath) {
     // Validate data source path
     try {
@@ -250,6 +250,6 @@ export async function exportData(page, dataSourcePath, dataOutputPath) {
 }
 
 export function getLastDirectoryName(path) {
-    const parts = path.split('/').filter(Boolean);
+    const parts = path.split(getOSPathSeparator()).filter(Boolean);
     return parts.length > 0 ? parts[parts.length - 1] : null;
 }

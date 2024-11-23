@@ -40,16 +40,30 @@ export function getAbsolutePath(itemPath) {
 }
 
 export function validatePath(path, pathType) {
-    const invalidChars = ['"', "'", ' ', '\\'];
+    const invalidChars = isWindows() ? ['"', "'"] : ['"', "'", ' '];
     if (invalidChars.some(char => path.includes(char))) {
-        console.log(chalk.red(`${pathType}에 공백(" "), 작은따옴표('), 큰따옴표("), 역슬래시(\\)를 포함할 수 없습니다.`));
+        if (isWindows()) {
+            console.log(chalk.red(`${pathType} 경로에는 작은따옴표('), 큰따옴표(")를 사용할 수 없습니다.`));
+        } else {
+            console.log(chalk.red(`${pathType} 경로에는 공백(" "), 작은따옴표('), 큰따옴표(")를 사용할 수 없습니다.`));
+        }
         process.exit(1);
     }
 }
+export function getOS() {
+    return process.platform;
+}
+export function isWindows() {
+    return getOS() === 'win32';
+}
+export function getOSPathSeparator() {
+    return isWindows() ? '\\' : '/';
+}
+
 export async function prepareOutputDir(outputDir) {
     // 끝의 모든 슬래시 제거
     let baseDir = outputDir;
-    while (baseDir.endsWith('/')) {
+    while (baseDir.endsWith('/') || baseDir.endsWith('\\')) {
         baseDir = baseDir.slice(0, -1).trim();
     }
 

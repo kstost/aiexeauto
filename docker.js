@@ -3,9 +3,10 @@ import { promisify } from 'util';
 import fs from 'fs';
 import { spawn, spawnSync } from 'child_process';
 import { config } from './config.js';
-import { getAbsolutePath, getAppPath } from './system.js';
+import { getAbsolutePath, getAppPath, isWindows } from './system.js';
 
 export async function executeInContainer(containerId, command) {
+    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     if (command.includes('"')) {
         return {
             output: '',
@@ -19,6 +20,7 @@ export async function executeInContainer(containerId, command) {
 }
 
 function parseCommandLine(cmdline) {
+    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     let args = [];
     let currentArg = '';
     let inSingleQuote = false;
@@ -70,6 +72,7 @@ function parseCommandLine(cmdline) {
 }
 
 export function executeCommand(command, args = []) {
+    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     const result = spawnSync(command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         encoding: 'utf-8',
@@ -86,6 +89,7 @@ export function executeCommand(command, args = []) {
 }
 
 export async function executeCommandAsync(command, args = []) {
+    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     return new Promise((resolve, reject) => {
         const result = parseCommandLine(command);
         const child = spawn(result.command, result.args, {
@@ -285,6 +289,7 @@ export async function doesDockerImageExist(imageName) {
 
 
 export async function getDockerInfo() {
+    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     try {
         const execAsync = promisify(exec);
         const command = "docker info --format '{{json .}}' 2>/dev/null";
