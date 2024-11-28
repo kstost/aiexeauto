@@ -54,7 +54,9 @@ export async function loadConfiguration() {
     return config_;
 }
 export function getAppPath(itemPath) {
-    return getAbsolutePath(path.join(__dirname, itemPath));
+    const workspace = getHomePath('.aiexeauto/workspace');
+    if (!fs.existsSync(workspace)) fs.mkdirSync(workspace, { recursive: true });
+    return getAbsolutePath(path.join(workspace, itemPath));
 }
 function isPortAvailable(port) {
     return new Promise((resolve) => {
