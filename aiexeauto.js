@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 // node server.js "make three folders named folder_0, folder_1, folder_2"
 
 import express from 'express';
