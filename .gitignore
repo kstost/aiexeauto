@@ -27,7 +27,7 @@ tmp/
 temp/
 *.tmp
 data/
-tasks/
+# tasks/
 data-output/
 dataout*/
 mission*.txt
@@ -40,7 +40,7 @@ out/
 
 # 프로젝트 특정 파일/폴더
 data-output/
-tasks/*/output/
+# tasks/*/output/
 !config.json
 
 # Docker 관련
