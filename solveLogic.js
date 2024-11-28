@@ -7,7 +7,7 @@ import ora from 'ora';
 import boxen from 'boxen';
 
 import { importData, exportData } from './dataHandler.js';
-import { chatCompletion } from './aifeatures.js';
+import { chatCompletion } from './aiFeatures.js';
 import { checkValidSyntaxJavascript, stripFencedCodeBlocks, runCode, getRequiredPackageNames } from './codeExecution.js';
 import { getLastDirectoryName } from './dataHandler.js';
 import { config } from './config.js';
@@ -51,9 +51,11 @@ const prompts = {
         '      - 앞선 과정에서 수행한 일은 반복하지 말아.',
         '      - 코드는 단일 JavaScript 파일로 완전하고 실행 가능해야 합니다.',
         '      - 진행 단계마다 `console.log`를 사용하여 상태값과 진행상황을 출력하세요.',
+        '      - 테이블로 출력할 때에는 `console.table`을 사용하세요.',
         '      - 작업을 수행하는 에이전트를 위해 근거가 되는 모든 결과를 출력하세요.',
         '      - 작업 성공여부를 판단하기 위한 근거를 모든 코드 수행 라인마다 출력하세요.',
         '      - 시각화 처리가 필요한 경우는 html,css,js 웹페이지형태로 시각화 결과물을 생성하세요.',
+        '      - Data Analysis 처리에는 Chart.js, ECharts, D3.js등의 라이브러리 사용.',
         '      - 이미지 처리가 필요한 경우는 sharp 라이브러리를 사용하세요.',
         '      - 쉘 명령어를 실행할 때는 child_process의 spawnSync를 사용하세요.',
         '      - 선택적인 작업은 생략합니다.',

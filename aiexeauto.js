@@ -6,6 +6,8 @@ import { findAvailablePort, getAbsolutePath, validatePath, prepareOutputDir, get
 import { validateAndCreatePaths } from './dataHandler.js';
 import fs from 'fs';
 import { config } from './config.js';
+import boxen from 'boxen';
+import chalk from 'chalk';
 const app = express();
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
@@ -48,6 +50,14 @@ if (config.useDocker) validatePath(config.dockerWorkDir, 'Docker 작업 경로')
 
     try {
         const PORT = await findAvailablePort(startPort);
+        console.log(boxen(prompt, {
+            padding: 1,
+            margin: 1,
+            borderStyle: 'double',
+            borderColor: 'green',
+            title: '수행 미션',
+            titleAlignment: 'center'
+        }));
         server = app.listen(PORT, async () => await solveLogic({ PORT, server, multiLineMission: prompt, dataSourcePath, dataOutputPath }));
     } catch (err) {
         console.error('Error while setting up port:', err);
