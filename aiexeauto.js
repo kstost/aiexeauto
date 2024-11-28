@@ -19,7 +19,10 @@ app.use(express.static(getAppPath('public')));
 const startPort = process.env.PORT || 8080;
 let server;
 let prompt = process.argv[2];
-if (prompt === 'config') {
+if (prompt === 'version') {
+    console.log(require('./package.json').version);
+    process.exit(0);
+} else if (prompt === 'config') {
     let configKey = process.argv[3];
     let configValue = process.argv[4];
     (async () => {
