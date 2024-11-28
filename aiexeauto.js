@@ -29,7 +29,7 @@ if (prompt === 'config') {
     })();
 } else {
     if (!prompt) {
-        console.log('사용법: node aiexeauto.js "<프롬프트|프롬프트를담은파일경로>" <데이터소스경로> <데이터출력경로>');
+        console.log('사용법: aiexeauto "<프롬프트|프롬프트를담은파일경로>" <데이터소스경로> <데이터출력경로>');
         process.exit(1);
     }
     let dataSourcePath = getAbsolutePath(process.argv[3]);
