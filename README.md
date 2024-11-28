@@ -1,6 +1,6 @@
 # aiexeauto
 
-aiexeauto는 다양한 AI 언어 모델을 활용하여 자연어 명령을 분석하고 최적의 JavaScript 코드를 자동 생성하여 실행하는 Node.js 애플리케이션입니다. WebContainer 기반의 안전한 샌드박스 환경에서 로컬 데이터를 독립적으로 분석하고 처리하며, 실행 결과를 스스로 검증하고 개선하여 주어진 작업을 완수합니다.
+aiexeauto는 컴퓨터에서 필요한 작업을 명령을 받아 대신 수행해주는 인공지능에이전트입니다.
 
 ## 설치 방법
 
@@ -8,63 +8,64 @@ aiexeauto는 다양한 AI 언어 모델을 활용하여 자연어 명령을 분�
    - [Node.js 공식 웹사이트](https://nodejs.org/)에서 최신 LTS 버전을 다운로드하여 설치합니다.
 
 2. aiexeauto 설치
-   ```bash
+   Windows:
+   작업표시줄 검색창에서 `PowerShell`을 검색해서 나오는 `PowerShell` 아이콘을 더블클릭합니다.
+   그런 후 나오는 명령어 입력창에 다음 명령어를 입력합니다.
+   ```powershell
    npm install -g aiexeauto
    ```
 
-3. 설정
-   Claude 모델: 
-      - "claude-3-5-sonnet-20241022"
-      - "claude-3-5-haiku-20241022"
-      [가격 정보](https://www.anthropic.com/pricing#anthropic-api)
-
+   macOS:
+   터미널을 열고 다음 명령어를 입력합니다.
    ```bash
-   aiexeauto config claudeApiKey "your-claude-api-key" # Claude API 키 설정
-   aiexeauto config model "claude-3-5-haiku-20241022" # 사용할 AI 모델 지정
-   aiexeauto config llm "claude" # 사용할 AI 서비스 지정
-   aiexeauto config maxIterations 0 # 최대 반복 횟수 (0은 무제한)
-   aiexeauto config dockerImage "my-node-ubuntu" # 도커 이미지 이름
-   aiexeauto config useDocker true # 도커 사용 여부
-   aiexeauto config dockerWorkDir "/home/ubuntu/work" # 도커 컨테이너 내 작업 디렉토리
+   sudo npm install -g aiexeauto
    ```
 
+3. 설정
+   aiexeauto는 Anthropic의 Claude AI 모델을 사용하여 작업을 수행합니다.
 
-4. Docker 사용준비 (Docker 사용시)
-   - 도커 설치
-     - [도커 공식 웹사이트](https://www.docker.com/)에서 Docker Desktop 설치
+   지원 모델:
+   - Claude 3 Haiku (추천) - 빠른 응답, 합리적인 가격
+   - Claude 3 Sonnet - 더 정교한 작업 수행 가능
+   
+   [Claude 요금제 확인하기](https://www.anthropic.com/pricing#anthropic-api)
 
-   - 도커 이미지 빌드
+   기본 설정:
+   Windows, macOS 공통으로 각각 파워쉘, 터미널상에서 다음 명령어를 입력하여 설정을 합니다.
+   ```bash
+   # API 키 및 모델 설정
+   aiexeauto config claudeApiKey "sk-ant-api...."  # Claude API 키 (기본값: "") https://console.anthropic.com/settings/keys 에서 발급가능
+   aiexeauto config model "claude-3-5-haiku-20241022"   # AI 모델 선택 (기본값: "claude-3-5-haiku-20241022") haiku: claude-3-5-haiku-20241022, sonnet: claude-3-5-sonnet-20241022
+   aiexeauto config llm "claude"                        # AI 서비스 지정 (기본값: "claude")
+
+   # 실행 환경 설정
+   aiexeauto config maxIterations 0                     # 반복 횟수 (0=무제한) (기본값: 0)
+   aiexeauto config overwriteOutputDir false            # 덮어쓰기 여부 (false: 덮어쓰지 않음, true: 덮어씀) (기본값: false)
+
+   # 도커 설정 (Docker 사용시)
+   aiexeauto config useDocker true                      # Docker 사용 여부 (true: 사용, false: 사용안함) (기본값: false)
+   aiexeauto config dockerImage "my-node-ubuntu"        # Docker 이미지 (기본값: "my-node-ubuntu")
+   aiexeauto config dockerWorkDir "/home/ubuntu/work"   # 작업 디렉토리 (기본값: "/home/ubuntu/work")
+   ```
+
+4. Docker 환경 구성 (선택사항, macOS 에서만 사용 가능)
+   - Docker Desktop 설치
+     - [Docker 공식 웹사이트](https://www.docker.com/)에서 운영체제에 맞는 버전 다운로드 및 설치
+
+   - aiexeauto Docker 이미지 생성
      ```bash
-     # 도커 이미지 빌드
-     cd my-docker-app
-     docker build -t my-node-ubuntu .
-
-     # 이미지 확인
-     docker images
+     # 저장소 클론 및 이미지 빌드
+     git clone https://github.com/kstost/aiexeauto.git && cd aiexeauto/my-docker-app && docker build -t my-node-ubuntu . && docker images
      ```
 
-   - 도커 설정
+   - Docker 실행 환경 설정
      ```bash
-     aiexeauto config dockerImage "my-node-ubuntu" # 도커 이미지 이름
-     aiexeauto config useDocker true # 도커 사용 여부
-     aiexeauto config dockerWorkDir "/home/ubuntu/work" # 도커 컨테이너 내 작업 디렉토리
+     # 기본 설정값으로 자동 구성됩니다
+     aiexeauto config dockerImage "my-node-ubuntu"      # 이미지명
+     aiexeauto config useDocker true                    # Docker 활성화
+     aiexeauto config dockerWorkDir "/home/ubuntu/work" # 작업 디렉토리
      ```
 
-## 핵심 기능
-
-- AI 자율 실행 및 문제해결
-  - AI의 자율적 의사결정 및 코드 생성
-  - 자연어 명령을 스스로 분석하여 최적의 JavaScript 코드 도출
-  - 로컬 데이터를 독립적으로 분석하고 처리 방법 결정
-  - 데이터 컨텍스트를 기반으로 AI 스스로 실행 전략 수립
-  - 필요한 npm 패키지를 자동으로 식별하고 설치
-  - 실행 결과를 스스로 검증하고 개선점 도출 및 재시도
-
-- WebContainer 및 Docker 기반 안전한 실행 환경
-  - Stackblitz WebContainer 샌드박스 활용
-  - Docker 컨테이너 기반 격리 실행 환경 제공
-  - 시스템 리소스 보호 및 제한된 권한 실행
-  - 악성 코드 실행 방지를 위한 샌드박스 환경
 
 ## 사용법
 
@@ -73,22 +74,27 @@ aiexeauto는 다양한 AI 언어 모델을 활용하여 자연어 명령을 분�
    aiexeauto "<프롬프트|프롬프트를담은파일경로>" <데이터소스경로> <데이터출력경로>
    ```
 
-2. 프롬프트 파일 사용
+2. 실행 옵션 상세 설명
+   - 프롬프트: 실행할 작업을 자연어로 설명하거나 프롬프트가 담긴 텍스트 파일 경로 (필수)
+   - 데이터소스경로: 입력 데이터가 있는 디렉토리 경로 (선택사항: 빈칸으로 두면 현재 디렉토리에 소스폴더를 생성함)
+   - 데이터출력경로: 결과물이 저장될 디렉토리 경로 (선택사항: 빈칸으로 두면 현재 디렉토리에 출력폴더를 생성함)
+
+3. 프롬프트 텍스트 사용
    ```bash
-   aiexeauto "tasks/task1.txt" ./data ./data-output
+   aiexeauto "폴더 안에 담긴 중복 파일을 모두 찾아서 고유한 파일 하나 남기고 다 지워줘." ./data ./data-output
    ```
 
-3. 실행 옵션 상세 설명
-   - 프롬프트: 실행할 작업을 자연어로 설명하거나 프롬프트가 담긴 텍스트 파일 경로
-   - 데이터소스경로: 입력 데이터가 있는 디렉토리 경로
-   - 데이터출력경로: 결과물이 저장될 디렉토리 경로
+4. 프롬프트 파일 사용
+   ```bash
+   aiexeauto "task1.txt" ./data ./data-output
+   ```
 
-4. 주의사항
+5. 주의사항
    - 본 프로젝트는 시험적인 프로토타입의 버전입니다. 이용에 주의 부탁드립니다.
    - AI는 실수를 할수도 있습니다. 실수로 인한 손해에 주의해주세요.
    - 입력 데이터는 반드시 디렉토리 형태로 제공합니다.
    - 설정에 따라 출력 디렉토리는 만약 존재하면 기존의 디렉토리를 덮어쓸 수 있음을 유의해주세요.
 
-5. 면책 조항
+6. 면책 조항
    - 사용자는 aiexeauto 사용에 대한 전적인 책임을 집니다.
 
