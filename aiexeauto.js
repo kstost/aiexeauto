@@ -29,8 +29,13 @@ validatePath(dataOutputPath, '데이터 출력 경로');
 if (config.useDocker) validatePath(config.dockerWorkDir, 'Docker 작업 경로');
 
 (async () => {
+    if (config.llm !== 'claude') {
+        console.log('현재는 Anthropic의 Claude 모델만 지원합니다. 미안해.');
+        process.exit(1);
+    }
     if (fs.existsSync(getAbsolutePath(prompt))) {
         prompt = fs.readFileSync(getAbsolutePath(prompt), 'utf8');
+        prompt = prompt.split('\n').filter(line => line.trim() !== '').join(' ');
     }
 
     try {

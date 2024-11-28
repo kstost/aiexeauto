@@ -26,6 +26,11 @@ logs/
 tmp/
 temp/
 *.tmp
+data/
+data-output/
+dataout*/
+mission*.txt
+.code_*.js
 
 # 빌드 결과물
 dist/

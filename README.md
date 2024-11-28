@@ -22,9 +22,9 @@ aiexeauto는 다양한 AI 언어 모델을 활용하여 자연어 명령을 분�
    - config.js 파일을 다음과 같이 설정합니다:
    ```javascript
    export const config = {
-       openaiApiKey: "",                   // OpenAI API 키 입력
-       groqApiKey: "",                     // Groq API 키 입력  
-       geminiApiKey: "",                   // Google Gemini API 키 입력
+       openaiApiKey: "",                   // OpenAI API 키 입력 (아직 미지원)
+       groqApiKey: "",                     // Groq API 키 입력   (아직 미지원)
+       geminiApiKey: "",                   // Google Gemini API 키 입력 (아직 미지원)
        claudeApiKey: "",                   // Anthropic Claude API 키 입력
        model: "claude-3-5-haiku-20241022", // 사용할 AI 모델 지정
        llm: "claude",                      // 사용할 AI 서비스 지정
@@ -40,31 +40,33 @@ aiexeauto는 다양한 AI 언어 모델을 활용하여 자연어 명령을 분�
 
    - 설정 항목 설명
      - API 키 설정
-       - `openaiApiKey`: OpenAI API 키
-       - `groqApiKey`: Groq API 키
-       - `geminiApiKey`: Google API 키
+       - `openaiApiKey`: OpenAI API 키 (아직 미지원)
+       - `groqApiKey`: Groq API 키 (아직 미지원)
+       - `geminiApiKey`: Google API 키 (아직 미지원)
        - `claudeApiKey`: Anthropic Claude API 키
 
      - `llm`: 사용할 AI 서비스
-       - 지원 서비스: "claude", "openai", "groq", "gemini"
+       - 지원 서비스: "claude"
 
      - `model`: 사용할 AI 모델
        - Claude 모델: 
            - "claude-3-5-sonnet-20241022"
            - "claude-3-5-haiku-20241022"
            [가격 정보](https://www.anthropic.com/pricing#anthropic-api)
-       - OpenAI 모델:
+
+       - OpenAI 모델 (아직 미지원) :
            - "gpt-4o"
            - "gpt-4o-mini"
            - "gpt-3.5-turbo"
            [가격 정보](https://openai.com/api/pricing/)
            
-       - Groq 모델:
+       - Groq 모델 (아직 미지원):
            - "llama-3.1-70b-versatile"
            - "llama3-70b-8192"
            - "llama3-8b-8192"
            [가격 정보](https://groq.com/pricing)
-       - Gemini 모델:
+
+       - Gemini 모델 (아직 미지원):
            - "gemini-1.5-flash"
            - "gemini-1.5-flash-8b"
            - "gemini-1.5-pro"

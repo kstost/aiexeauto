@@ -1,13 +1,14 @@
 import { config } from './config.js';
-import { getAppPath } from './system.js';
+import { getAppPath, convertJsonToResponseFormat } from './system.js';
 import fs from 'fs';
 
-async function leaveLog({ callMode, messages }) {
+async function leaveLog({ callMode, data }) {
     const aiLogFolder = getAppPath('logs');
     if (!fs.existsSync(aiLogFolder)) fs.mkdirSync(aiLogFolder);
     const date = new Date().toISOString().replace(/[:.]/g, '-') + '-' + Date.now();
     let contentToLeave = `## callMode: ${callMode}\n\n`;
     {
+        fs.writeFileSync(`${aiLogFolder}/${date}.json`, JSON.stringify(data));
         let messages = data.messages;
         for (let i = 0; i < messages.length; i++) {
             contentToLeave += `${'-'.repeat(800)}\n## ${messages[i].role} ##\n${messages[i].content}\n\n`;
@@ -29,12 +30,14 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                 model: model,
                 messages: [{ role: "system", content: systemPrompt }, ...promptList],
             };
+            await leaveLog({ callMode, data });
             const response = await fetch(url, {
                 method: 'POST',
                 headers: headers,
                 body: JSON.stringify(data)
             });
             const result = await response.json();
+            // console.log(result);
             try {
                 return result.choices[0].message.content;
             } catch (e) {
@@ -48,6 +51,31 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json"
             };
+            let tool_choice_list = {
+                evaluateCode: { type: "tool", name: "evaluate_mission" },
+                generateCode: { type: "tool", name: "generate_code" }
+            };
+            let toolName = {
+                evaluateCode: 'evaluation',
+                generateCode: 'nodejs_code'
+            };
+            let toolsList = {
+                evaluateCode: [
+                    {
+                        "name": "evaluate_mission",
+                        "description": "미션 완수 여부를 판단.",
+                        "input_schema": convertJsonToResponseFormat({ evaluation: "" }, { evaluation: "ENDOFMISSION or NOTSOLVED" }).json_schema.schema
+                    }
+                ],
+                generateCode: [
+                    {
+                        "name": "generate_code",
+                        "description": "코드를 생성.",
+                        "input_schema": convertJsonToResponseFormat({ nodejs_code: "" }, { nodejs_code: "nodejs code for the only one task" }).json_schema.schema
+                    }
+                ]
+            }
+            let tools = toolsList[callMode];
             const data = {
                 model: model,
                 system: systemPrompt,
@@ -55,36 +83,39 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                     role: p.role === "assistant" ? "assistant" : "user",
                     content: p.content
                 })),
-                max_tokens: 4096 // 토큰 수를 늘림
+                max_tokens: 4096, // 토큰 수를 늘림
+                tools: tools,
+                tool_choice: tool_choice_list[callMode]
             };
             while (true) {
-                try {
-                    // console.log(JSON.stringify(data));
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify(data)
-                    });
-                    const result = await response.json();
-                    if (result?.error?.message?.includes('rate limit')) {
-                        console.log('Rate limit 도달. 1분 대기...');
-                        await new Promise(resolve => setTimeout(resolve, 60000));
+                await leaveLog({ callMode, data });
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                const errorMessage = result?.error?.message || '';
+                if (errorMessage) {
+                    if (errorMessage.includes('rate limit')) {
+                        await new Promise(resolve => setTimeout(resolve, 5000));
                         continue;
                     }
-                    try {
-                        let text = result.content[0].text;
-                        return text;
-                    } catch (e) {
-                        throw new Error(result?.error?.message);
-                    }
-                } catch (e) {
-                    if (e.message.includes('rate limit')) {
-                        console.log('Rate limit 도달. 1분 대기...');
-                        await new Promise(resolve => setTimeout(resolve, 60000));
-                        continue;
-                    }
-                    throw e;
+                    throw new Error(errorMessage);
                 }
+                if (false && tools) console.log(JSON.stringify(result, undefined, 3));
+                if (false) console.log(JSON.stringify(result, undefined, 3));
+                if (toolName[callMode]) {
+                    try {
+                        let data = result?.content?.filter(c => c.type === 'tool_use')[0]?.input[toolName[callMode]];
+                        if (!data) throw null;
+                        return data;
+                    } catch {
+                        continue;
+                    }
+                }
+                let text = result?.content?.[0]?.text;
+                return text || '';
             }
         } else if (llm === 'groq') {
             let code = '';

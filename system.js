@@ -85,3 +85,185 @@ export async function prepareOutputDir(outputDir) {
         return targetDir;
     }
 }
+
+// export function convertJsonToResponseFormat(struct) {
+//     const getType = (value) => {
+//         if (value === null) return "null";
+//         if (Array.isArray(value)) return "array";
+//         if (typeof value === "boolean") return "boolean";
+//         if (typeof value === "number") return Number.isInteger(value) ? "integer" : "number";
+//         if (typeof value === "string") return "string";
+//         if (typeof value === "object") return "object";
+//         return "unknown";
+//     };
+
+//     const generateSchema = (data) => {
+//         const dataType = getType(data);
+
+//         if (dataType === "object") {
+//             const properties = {};
+//             const required = [];
+//             for (const key in data) {
+//                 if (data.hasOwnProperty(key)) {
+//                     properties[key] = generateSchema(data[key]);
+//                     required.push(key);
+//                 }
+//             }
+//             return {
+//                 type: "object",
+//                 properties: properties,
+//                 required: required
+//             };
+//         } else if (dataType === "array") {
+//             if (data.length === 0) {
+//                 return { type: "array", items: {} };
+//             }
+//             const itemSchemas = data.map(item => generateSchema(item));
+//             const firstItemSchemaStr = JSON.stringify(itemSchemas[0]);
+//             const allSame = itemSchemas.every(
+//                 itemSchema => JSON.stringify(itemSchema) === firstItemSchemaStr
+//             );
+//             return {
+//                 type: "array",
+//                 items: allSame ? itemSchemas[0] : {}
+//             };
+//         } else {
+//             return { type: dataType };
+//         }
+//     };
+
+//     const schema = generateSchema(struct);
+//     schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+//     schema["additionalProperties"] = false;
+
+//     return {
+//         type: "json_schema",
+//         json_schema: {
+//             name: "response",
+//             schema: schema,
+//             strict: true
+//         }
+//     };
+// }
+
+// // 함수 호출 예시
+// // console.log(convertJsonToResponseFormat({ result: true }));
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export function convertJsonToResponseFormat(struct, descriptions = {}) {
+    const getType = (value) => {
+        if (value === null) return "null";
+        if (Array.isArray(value)) return "array";
+        if (typeof value === "boolean") return "boolean";
+        if (typeof value === "number") return Number.isInteger(value) ? "integer" : "number";
+        if (typeof value === "string") return "string";
+        if (typeof value === "object") return "object";
+        return "unknown";
+    };
+
+    const generateSchema = (data, desc) => {
+        const dataType = getType(data);
+        let schema = {};
+
+        if (dataType === "object") {
+            const properties = {};
+            const required = [];
+            for (const key in data) {
+                if (data.hasOwnProperty(key)) {
+                    const propertyDesc = desc && desc[key] ? desc[key] : {};
+                    properties[key] = generateSchema(data[key], propertyDesc);
+                    required.push(key);
+                }
+            }
+            schema = {
+                type: "object",
+                properties: properties,
+                required: required
+            };
+        } else if (dataType === "array") {
+            if (data.length === 0) {
+                schema = { type: "array", items: {} };
+            } else {
+                const itemSchemas = data.map(item => generateSchema(item, desc));
+                const firstItemSchemaStr = JSON.stringify(itemSchemas[0]);
+                const allSame = itemSchemas.every(
+                    itemSchema => JSON.stringify(itemSchema) === firstItemSchemaStr
+                );
+                schema = {
+                    type: "array",
+                    items: allSame ? itemSchemas[0] : {}
+                };
+            }
+        } else {
+            schema = { type: dataType };
+        }
+
+        // Add description if provided
+        if (desc && typeof desc === 'string') {
+            schema.description = desc;
+        }
+
+        return schema;
+    };
+
+    const schema = generateSchema(struct, descriptions);
+    schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+    schema["additionalProperties"] = false;
+
+    return {
+        type: "json_schema",
+        json_schema: {
+            name: "response",
+            schema: schema,
+            strict: true
+        }
+    };
+}
+
+// 함수 호출 예시
+// console.log(convertJsonToResponseFormat({ result: true }, { result: "description" }));
