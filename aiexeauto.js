@@ -3,7 +3,7 @@
 
 import express from 'express';
 import { solveLogic } from './solveLogic.js';
-import { findAvailablePort, getAbsolutePath, validatePath, prepareOutputDir, getAppPath, getConfiguration, setConfiguration } from './system.js';
+import { getCodePath, findAvailablePort, getAbsolutePath, validatePath, prepareOutputDir, getAppPath, getConfiguration, setConfiguration } from './system.js';
 import { validateAndCreatePaths } from './dataHandler.js';
 import fs from 'fs';
 import boxen from 'boxen';
@@ -15,7 +15,12 @@ app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
     next();
 });
-app.use(express.static(getAppPath('public')));
+{
+    const dirSource = getCodePath('public');
+    const dirDestination = getAppPath('.public');
+    if (!fs.existsSync(dirDestination)) fs.cpSync(dirSource, dirDestination, { recursive: true });
+}
+app.use(express.static(getAppPath('.public')));
 const startPort = process.env.PORT || 8080;
 let server;
 let prompt = process.argv[2];

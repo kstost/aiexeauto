@@ -23,6 +23,9 @@ export function getConfigFilePath() {
 export async function setConfiguration(key, value) {
     const configPath = getConfigFilePath();
     const config = await loadConfiguration();
+    try {
+        value = JSON.parse(value);
+    } catch { }
     config[key] = value;
     await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
 }
@@ -52,6 +55,9 @@ export async function loadConfiguration() {
         if (!config_[key]) config_[key] = config[key];
     }
     return config_;
+}
+export function getCodePath(itemPath) {
+    return getAbsolutePath(path.join(__dirname, itemPath));
 }
 export function getAppPath(itemPath) {
     const workspace = getHomePath('.aiexeauto/workspace');
