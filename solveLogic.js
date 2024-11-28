@@ -10,9 +10,9 @@ import { importData, exportData } from './dataHandler.js';
 import { chatCompletion } from './aiFeatures.js';
 import { checkValidSyntaxJavascript, stripFencedCodeBlocks, runCode, getRequiredPackageNames } from './codeExecution.js';
 import { getLastDirectoryName } from './dataHandler.js';
-import { config } from './config.js';
 import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, runNodeJSCode, doesDockerImageExist } from './docker.js';
 import fs from 'fs';
+import { getConfiguration } from './system.js';
 
 let containerId;
 let spinners = {};
@@ -254,20 +254,21 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
     let iterationCount = 0;
 
     try {
-        if (config.useDocker) {
+        if (await getConfiguration('useDocker')) {
+            const dockerImage = await getConfiguration('dockerImage');
             const { isRunning } = await getDockerInfo();
             if (!isRunning) {
                 throw new Error('도커가 실행중이지 않습니다.');
             }
-            if (!(await doesDockerImageExist(config.dockerImage))) {
-                throw new Error(`도커 이미지 ${config.dockerImage}가 존재하지 않습니다.`);
+            if (!(await doesDockerImageExist(dockerImage))) {
+                throw new Error(`도커 이미지 ${dockerImage}가 존재하지 않습니다.`);
             }
-            containerId = await runDockerContainerDemon(config.dockerImage);
+            containerId = await runDockerContainerDemon(dockerImage);
         }
         let browser, page;
 
         // 브라우저 시작 스피너
-        if (!config.useDocker) {
+        if (!await getConfiguration('useDocker')) {
             spinners.browser = createSpinner('브라우저를 시작하는 중...');
             browser = await puppeteer.launch({
                 headless: "new",
@@ -287,11 +288,13 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 spinners.page.succeed('웹 컨테이너가 준비되었습니다.');
             }
         }
+        const dockerWorkDir = await getConfiguration('dockerWorkDir');
+        const maxIterations = await getConfiguration('maxIterations');
 
         // 데이터 임포트 스피너
         spinners.import = createSpinner('데이터를 가져오는 중...');
-        if (config.useDocker) {
-            await importToDocker(containerId, config.dockerWorkDir, dataSourcePath);
+        if (await getConfiguration('useDocker')) {
+            await importToDocker(containerId, dockerWorkDir, dataSourcePath);
         } else {
             await importData(page, dataSourcePath);
         }
@@ -300,7 +303,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
         }
         let nextCodeForValidation;
         let evaluationText = '';
-        while (iterationCount < config.maxIterations || !config.maxIterations) {
+        while (iterationCount < maxIterations || !maxIterations) {
             iterationCount++;
             let javascriptCode = '';
             let requiredPackageNames;
@@ -385,8 +388,9 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
 
             spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
             let result;
-            if (config.useDocker) {
-                result = await runNodeJSCode(containerId, config.dockerWorkDir, javascriptCode, requiredPackageNames);
+            if (await getConfiguration('useDocker')) {
+                const dockerWorkDir = await getConfiguration('dockerWorkDir');
+                result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCode, requiredPackageNames);
             } else {
                 result = await runCode(page, javascriptCode, requiredPackageNames);
             }
@@ -433,8 +437,8 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
 
         // 데이터 내보내기 스피너
         spinners.export = createSpinner('결과를 저장하는 중...');
-        if (config.useDocker) {
-            await exportFromDocker(containerId, config.dockerWorkDir, dataOutputPath);
+        if (await getConfiguration('useDocker')) {
+            await exportFromDocker(containerId, await getConfiguration('dockerWorkDir'), dataOutputPath);
         } else {
             await exportData(page, dataSourcePath, dataOutputPath);
         }
@@ -457,8 +461,8 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 spinner.fail('작업이 중단되었습니다.');
             }
         });
-        console.error('오류가 발생했습니다:', err);
-        console.error('오류가 발생했습니다:', err.message);
+        // console.error('오류가 발생했습니다:', err);
+        console.error(chalk.red('✖'), chalk.redBright(err.message));
         process.exit(1);
     }
     finally {

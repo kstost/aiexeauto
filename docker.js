@@ -2,8 +2,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import { spawn, spawnSync } from 'child_process';
-import { config } from './config.js';
-import { getAbsolutePath, getAppPath, isWindows } from './system.js';
+import { getAbsolutePath, getAppPath, isWindows, getConfiguration } from './system.js';
 
 export async function executeInContainer(containerId, command) {
     if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
@@ -71,7 +70,7 @@ function parseCommandLine(cmdline) {
     return { command, args };
 }
 
-export function executeCommand(command, args = []) {
+export function executeCommandSync(command, args = []) {
     if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     const result = spawnSync(command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
@@ -88,7 +87,8 @@ export function executeCommand(command, args = []) {
     };
 }
 
-export async function executeCommandAsync(command, args = []) {
+export async function executeCommand(command, args = []) {
+    const khongLog = true;
     if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     return new Promise((resolve, reject) => {
         const result = parseCommandLine(command);
@@ -102,29 +102,29 @@ export async function executeCommandAsync(command, args = []) {
         let output = '';
 
         child.stdout.on('data', (data) => {
-            console.log('execution_stdout', data.toString());
+            if (!khongLog) console.log('execution_stdout', data.toString());
             const str = data.toString();
             stdout += str;
             output += str;
         });
 
         child.stderr.on('data', (data) => {
-            console.log('execution_stderr', data.toString());
+            if (!khongLog) console.log('execution_stderr', data.toString());
             const str = data.toString();
             stderr += str;
             output += str;
         });
 
         child.on('error', (error) => {
-            console.log('execution_error', error);
+            if (!khongLog) console.log('execution_error', error);
             reject(error);
         });
         child.on('exit', (code) => {
-            console.log('execution_exit', code);
+            if (!khongLog) console.log('execution_exit', code);
         });
 
         child.on('close', (code) => {
-            console.log('execution_close', code);
+            if (!khongLog) console.log('execution_close', code);
             resolve({
                 stdout,
                 stderr,
@@ -222,7 +222,8 @@ export async function runDockerContainerDemon(dockerImage) {
 
 export async function runDockerContainer(dockerImage, inputDir, outputDir) {
     const containerId = await runDockerContainerDemon(dockerImage);
-    const workDir = config.dockerWorkDir;
+    const dockerWorkDir = await getConfiguration('dockerWorkDir');
+    const workDir = dockerWorkDir;
 
     try {
         await importToDocker(containerId, workDir, inputDir);

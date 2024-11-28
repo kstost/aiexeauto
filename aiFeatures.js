@@ -1,5 +1,4 @@
-import { config } from './config.js';
-import { getAppPath, convertJsonToResponseFormat } from './system.js';
+import { getAppPath, convertJsonToResponseFormat, getConfiguration } from './system.js';
 import fs from 'fs';
 
 async function leaveLog({ callMode, data }) {
@@ -28,10 +27,13 @@ async function leaveLog({ callMode, data }) {
 }
 export async function chatCompletion(systemPrompt, promptList, callMode) {
     async function requestChatCompletion(systemPrompt, promptList, model) {
-        const llm = config.llm;
+        const llm = await getConfiguration('llm');
+        let claudeApiKey = await getConfiguration('claudeApiKey');
+        claudeApiKey = claudeApiKey.trim();
+        if (!claudeApiKey) throw new Error('Claude API 키가 설정되어 있지 않습니다.');
         if (llm === 'claude') {
             const url = "https://api.anthropic.com/v1/messages";
-            const CLAUDE_API_KEY = config.claudeApiKey;
+            const CLAUDE_API_KEY = claudeApiKey;
             const headers = {
                 "x-api-key": `${CLAUDE_API_KEY}`,
                 "anthropic-version": "2023-06-01",
@@ -117,7 +119,8 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
             }
         }
     }
-    const responseData = await requestChatCompletion(systemPrompt, promptList, config.model);
+    const model = await getConfiguration('model');
+    const responseData = await requestChatCompletion(systemPrompt, promptList, model);
     return responseData;
 }
 

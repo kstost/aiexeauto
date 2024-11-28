@@ -3,13 +3,20 @@
   "version": "1.0.0",
   "main": "aiexeauto.js",
   "type": "module",
+  "bin": {
+    "aiexeauto": "aiexeauto.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "author": {
+    "name": "Kim seungtae",
+    "email": "monogatree@gmail.com",
+    "url": "https://www.youtube.com/@%EC%BD%94%EB%93%9C%EA%B9%8E%EB%8A%94%EB%85%B8%EC%9D%B8"
+  },
+  "license": "MIT",
+  "description": "Safe AI-Agent AIEXE Auto",
   "dependencies": {
     "boxen": "^8.0.1",
     "chalk": "^5.3.0",

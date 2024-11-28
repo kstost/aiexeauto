@@ -1,12 +1,58 @@
 import net from 'net';
 import chalk from 'chalk';
 import fs from 'fs';
-import { config } from './config.js';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import path from 'path';
+import os from 'os';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+export function getHomeDir() {
+    return os.homedir();
+}
+export function getHomePath(itemPath) {
+    return path.join(getHomeDir(), itemPath);
+}
+export function getConfigFilePath() {
+    const folder = getHomePath('.aiexeauto');
+    if (!fs.existsSync(folder)) fs.mkdirSync(folder, { recursive: true });
+    return path.join(folder, '.aiexeauto.cokac.config.json');
+}
+
+export async function setConfiguration(key, value) {
+    const configPath = getConfigFilePath();
+    const config = await loadConfiguration();
+    config[key] = value;
+    await fs.promises.writeFile(configPath, JSON.stringify(config, null, 2));
+}
+export async function getConfiguration(key) {
+    const config = await loadConfiguration();
+    return config[key];
+}
+export async function loadConfiguration() {
+    let config = {
+        claudeApiKey: "",
+        model: "claude-3-5-haiku-20241022",
+        llm: "claude",
+        maxIterations: 0,
+        dockerImage: 'my-node-ubuntu',
+        useDocker: false, // Docker 사용 여부 (false: 도커 아닌 웹컨테이너 사용, true: 도커 사용함) 윈도우즈에서는 도커 지원하지 않음
+        dockerWorkDir: '/home/ubuntu/work',
+        overwriteOutputDir: false, // 덮어쓰기 여부 (false: 덮어쓰지 않음, true: 덮어씀)
+    }
+    let config_ = {};
+    try {
+        const configPath = getConfigFilePath();
+        const data = await fs.promises.readFile(configPath, 'utf8');
+        config_ = JSON.parse(data);
+        if (!config_ || (config_ && config_.constructor !== Object)) config_ = {};
+    } catch { }
+    for (let key in config) {
+        if (!config_[key]) config_[key] = config[key];
+    }
+    return config_;
+}
 export function getAppPath(itemPath) {
     return getAbsolutePath(path.join(__dirname, itemPath));
 }
@@ -33,6 +79,7 @@ export async function findAvailablePort(startPort) {
     return port;
 }
 export function getAbsolutePath(itemPath) {
+    if (!itemPath) return;
     if (!path.isAbsolute(itemPath)) {
         return path.join(process.cwd(), itemPath);
     }
@@ -60,7 +107,7 @@ export function getOSPathSeparator() {
     return isWindows() ? '\\' : '/';
 }
 
-export async function prepareOutputDir(outputDir) {
+export async function prepareOutputDir(outputDir, overwrite) {
     // 끝의 모든 슬래시 제거
     let baseDir = outputDir;
     while (baseDir.endsWith('/') || baseDir.endsWith('\\')) {
@@ -69,7 +116,7 @@ export async function prepareOutputDir(outputDir) {
 
     // 사용 가능한 디렉토리명 찾기
     let targetDir = baseDir;
-    if (!config.overwriteOutputDir) {
+    if (!overwrite) {
         let suffix = 1;
 
         while (fs.existsSync(targetDir)) {

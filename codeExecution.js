@@ -1,5 +1,4 @@
-import { chatCompletion } from './aifeatures.js';
-import { config } from './config.js';
+import { chatCompletion } from './aiFeatures.js';
 
 export function checkValidSyntaxJavascript(code) {
     try {
@@ -28,7 +27,7 @@ export function stripFencedCodeBlocks(content) {
     let hasCodeBlocks = false;
 
     for (let line of lines) {
-        if (line.startsWith(config.threeBackticks)) {
+        if (line.startsWith('```')) {
             inCodeBlock = !inCodeBlock; // inCodeBlock 상태를 토글합니다.
             hasCodeBlocks = true; // 펜스 코드 블록이 있음을 표시합니다.
             continue; // ```가 있는 라인은 건너뜁니다.
