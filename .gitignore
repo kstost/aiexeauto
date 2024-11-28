@@ -27,6 +27,7 @@ tmp/
 temp/
 *.tmp
 data/
+tasks/
 data-output/
 dataout*/
 mission*.txt
