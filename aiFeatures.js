@@ -3,6 +3,7 @@ import { getAppPath, convertJsonToResponseFormat } from './system.js';
 import fs from 'fs';
 
 async function leaveLog({ callMode, data }) {
+    return;
     const aiLogFolder = getAppPath('logs');
     if (!fs.existsSync(aiLogFolder)) fs.mkdirSync(aiLogFolder);
     const date = new Date().toISOString().replace(/[:.]/g, '-') + '-' + Date.now();
