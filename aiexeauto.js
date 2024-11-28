@@ -25,7 +25,7 @@ const startPort = process.env.PORT || 8080;
 let server;
 let prompt = process.argv[2];
 if (prompt === 'version') {
-    console.log('1.0.8');
+    console.log('1.0.9');
     process.exit(0);
 } else if (prompt === 'config') {
     let configKey = process.argv[3];
