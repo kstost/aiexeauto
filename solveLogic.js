@@ -11,7 +11,7 @@ import { importData, exportData } from './dataHandler.js';
 import { chatCompletion } from './aiFeatures.js';
 import { isInstalledNpmPackage, installNpmPackage, checkValidSyntaxJavascript, stripFencedCodeBlocks, runCode, getRequiredPackageNames } from './codeExecution.js';
 import { getLastDirectoryName } from './dataHandler.js';
-import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, isInstalledNodeModule, installNodeModules, runNodeJSCode, doesDockerImageExist } from './docker.js';
+import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, isInstalledNodeModule, installNodeModules, runNodeJSCode, runPythonCode, doesDockerImageExist, isInstalledPythonModule, installPythonModules } from './docker.js';
 import fs from 'fs';
 import { getConfiguration } from './system.js';
 
@@ -80,7 +80,8 @@ const prompts = {
         true ? '      #### INSTRUCTION' : '[REMOVE]',
         true ? '      - 실행할 쉘 명령어를 제공해주세요' : '[REMOVE]',
         true ? '   ' : '[REMOVE]',
-        '   ### generate_code',
+        '',
+        '   ### generate_nodejs_code',
         '   - NodeJS 코드를 생성하여 작업을 수행합니다.',
         '      #### INSTRUCTION',
         '      - **단 한가지 일**만 수행.',
@@ -99,6 +100,21 @@ const prompts = {
         '      - 선택적인 작업은 생략합니다.',
         '   ',
         '',
+        useDocker ? '   ### generate_python_code' : '[REMOVE]',
+        useDocker ? '   - Python 코드를 생성하여 작업을 수행합니다.' : '[REMOVE]',
+        useDocker ? '      #### INSTRUCTION' : '[REMOVE]',
+        useDocker ? '      - **단 한가지 일**만 수행.' : '[REMOVE]',
+        useDocker ? '      - 앞선 과정에서 수행한 일은 반복하지 말아.' : '[REMOVE]',
+        useDocker ? '      - 코드는 단일 Python 파일로 완전하고 실행 가능해야 합니다.' : '[REMOVE]',
+        useDocker ? '      - 진행 단계마다 `print`를 사용하여 상태값과 진행상황을 출력하세요.' : '[REMOVE]',
+        useDocker ? '      - 작업을 수행하는 에이전트를 위해 근거가 되는 모든 결과를 출력하세요.' : '[REMOVE]',
+        useDocker ? '      - 작업 성공여부를 판단하기 위한 근거를 모든 코드 수행 라인마다 출력하세요.' : '[REMOVE]',
+        useDocker ? '      - 쉘 명령어를 실행할 때는 subprocess를 사용하세요.' : '[REMOVE]',
+        useDocker ? '      - 코드의 수행 후 반드시 프로세스가 종료되어야한다.' : '[REMOVE]',
+        useDocker ? '      - 서버를 띄우는 작동은 절대로 수행하지 마세요.' : '[REMOVE]',
+        useDocker ? '      - 선택적인 작업은 생략합니다.' : '[REMOVE]',
+        '   ',
+        '',
     ].filter(line => line.trim() !== '[REMOVE]').join('\n'),
     systemEvaluationPrompt: (mission) => [
         '컴퓨터 작업 실행 에이전트로서, MISSION이 완전하게 완료되었는지 엄격고 논리적으로 검증하고 평가하기 위해 필요한 작업을 수행합니다.',
@@ -114,9 +130,9 @@ const prompts = {
     ].join('\n'),
 };
 
-const highlightCode = (code) => {
+const highlightCode = (code, language) => {
     return highlight(code, {
-        language: 'javascript',
+        language: language,
         theme: {
             keyword: chalk.blue,
             string: chalk.green,
@@ -342,6 +358,8 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             iterationCount++;
             let javascriptCode = '';
             let javascriptCodeBack = '';
+            let pythonCode = '';
+            let pythonCodeBack = '';
             let requiredPackageNames;
             let whatdidwedo = '';
             let whattodo = '';
@@ -377,9 +395,14 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     'generateCode'
                 );
                 if (spinners.iter) spinners.iter.succeed('AI가 코드 생성을 완료했습니다');
-                if (actData.name === 'generate_code') {
+                if (actData.name === 'generate_nodejs_code') {
                     javascriptCode = actData.input.nodejs_code;
+                    requiredPackageNames = actData.input.npm_package_list;
                     skipNpmInstall = false;
+                } else if (actData.name === 'generate_python_code') {
+                    pythonCode = actData.input.python_code;
+                    requiredPackageNames = actData.input.pip_package_list;
+                    // skipNpmInstall = false;
                 } else if (actData.name === 'list_directory') {
                     javascriptCode = [
                         `const listDirectory = require('listDirectory');`,
@@ -542,44 +565,74 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                         `console.log((${JSON.stringify({ printData })}).printData);`,
                     ].join('\n');
                 }
-                console.log(boxen(highlightCode(javascriptCode), {
-                    title: chalk.bold.cyan('Generated Code'),
-                    titleAlignment: 'center',
-                    padding: 1,
-                    margin: 1,
-                    borderStyle: 'double',
-                    borderColor: 'cyan'
-                }));
+                if (!pythonCode && javascriptCode) {
+                    console.log(boxen(highlightCode(javascriptCode, 'javascript'), {
+                        title: chalk.bold.cyan('Generated Code'),
+                        titleAlignment: 'center',
+                        padding: 1,
+                        margin: 1,
+                        borderStyle: 'double',
+                        borderColor: 'cyan'
+                    }));
+                } else if (!javascriptCode && pythonCode) {
+                    console.log(boxen(highlightCode(pythonCode, 'python'), {
+                        title: chalk.bold.cyan('Generated Code'),
+                        titleAlignment: 'center',
+                        padding: 1,
+                        margin: 1,
+                        borderStyle: 'double',
+                        borderColor: 'cyan'
+                    }));
+                }
 
             } else {
                 javascriptCode = nextCodeForValidation;
                 nextCodeForValidation = null;
             }
             javascriptCode = stripFencedCodeBlocks(javascriptCode);
-            requiredPackageNames = null;
-            if (!skipNpmInstall) requiredPackageNames = await getRequiredPackageNames(javascriptCode, prompts);
+            if (false) requiredPackageNames = null;
+            if (false) if (!skipNpmInstall) requiredPackageNames = await getRequiredPackageNames(javascriptCode, prompts);
             if (!requiredPackageNames) requiredPackageNames = [];
-            for (const packageName of requiredPackageNames) {
-                let installed = useDocker ? isInstalledNodeModule(packageName) : isInstalledNpmPackage(packageName);
-                if (!installed) {
-                    spinners.iter = createSpinner(`${packageName} 설치중...`);
-                    if (useDocker) {
-                        await installNodeModules(containerId, dockerWorkDir, packageName);
-                    } else {
-                        await installNpmPackage(page, packageName);
+            if (requiredPackageNames && requiredPackageNames.constructor === Array) {
+                for (const packageName of requiredPackageNames) {
+                    if (!pythonCode && javascriptCode) {
+                        let installed = useDocker ? isInstalledNodeModule(packageName) : isInstalledNpmPackage(packageName);
+                        if (!installed) {
+                            spinners.iter = createSpinner(`${packageName} 설치중...`);
+                            if (useDocker) {
+                                await installNodeModules(containerId, dockerWorkDir, packageName);
+                            } else {
+                                await installNpmPackage(page, packageName);
+                            }
+                            if (spinners.iter) spinners.iter.succeed(`${packageName} 설치 완료`);
+                        }
+                    } else if (!javascriptCode && pythonCode) {
+                        let installed = await isInstalledPythonModule(containerId, dockerWorkDir, packageName);
+                        if (!installed) {
+                            spinners.iter = createSpinner(`${packageName} 설치중...`);
+                            if (useDocker) {
+                                await installPythonModules(containerId, dockerWorkDir, packageName);
+                            }
+                            if (spinners.iter) spinners.iter.succeed(`${packageName} 설치 완료`);
+                        }
                     }
-                    if (spinners.iter) spinners.iter.succeed(`${packageName} 설치 완료`);
                 }
             }
             requiredPackageNames = [];
             spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
             let result;
             {
-                let javascriptCodeToRun = javascriptCodeBack ? javascriptCodeBack : javascriptCode;
-                if (useDocker) {
-                    result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCodeToRun, requiredPackageNames);
-                } else {
-                    result = await runCode(page, javascriptCodeToRun, requiredPackageNames);
+                if (!pythonCode && javascriptCode) {
+                    let javascriptCodeToRun = javascriptCodeBack ? javascriptCodeBack : javascriptCode;
+                    if (useDocker) {
+                        result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCodeToRun, requiredPackageNames);
+                    } else {
+                        result = await runCode(page, javascriptCodeToRun, requiredPackageNames);
+                    }
+                } else if (!javascriptCode && pythonCode) {
+                    if (useDocker) {
+                        result = await runPythonCode(containerId, dockerWorkDir, pythonCode, requiredPackageNames);
+                    }
                 }
             }
 

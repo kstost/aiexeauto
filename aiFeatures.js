@@ -110,10 +110,15 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                         "input_schema": convertJsonToResponseFormat({ command: "" }, { command: "shell command to run, e.g, ls -al" }).json_schema.schema
                     } : null,
                     {
-                        "name": "generate_code",
-                        "description": "generate a code.",
-                        "input_schema": convertJsonToResponseFormat({ nodejs_code: "" }, { nodejs_code: "nodejs code for the only one task" }).json_schema.schema
+                        "name": "generate_nodejs_code",
+                        "description": "generate nodejs code.",
+                        "input_schema": convertJsonToResponseFormat({ nodejs_code: "", npm_package_list: [""] }, { nodejs_code: "nodejs code for the only one task", npm_package_list: "array of npm package names used in the code" }).json_schema.schema
                     },
+                    useDocker ? {
+                        "name": "generate_python_code",
+                        "description": "generate python code.",
+                        "input_schema": convertJsonToResponseFormat({ python_code: "", pip_package_list: [""] }, { python_code: "python code for the only one task", pip_package_list: "array of pip package names used in the code" }).json_schema.schema
+                    } : null,
                 ].filter(t => t !== null),
             }
             let tools = toolsList[callMode];

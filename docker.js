@@ -175,22 +175,69 @@ export async function initNodeProject(containerId, workDir) {
     let result = await executeInContainer(containerId, 'cd ' + workDir + ' && npm init -y');
 }
 
-const installHistory = {};
+const installNPMHistory = {};
 let npmInit = false;
+const installPIPHistory = {};
+let pipInit = false;
 export function isInstalledNodeModule(moduleName) {
-    return !!installHistory[moduleName];
+    return !!installNPMHistory[moduleName.toLowerCase()];
 }
 export async function installNodeModules(containerId, workDir, moduleName) {
     moduleName = moduleName.trim();
     if (!moduleName) return;
     await initNodeProject(containerId, workDir);
-    if (!installHistory[moduleName]) {
-        installHistory[moduleName] = true;
+    if (!isInstalledNodeModule(moduleName)) {
+        installNPMHistory[moduleName.toLowerCase()] = true;
         let result = await executeInContainer(containerId, 'cd ' + workDir + ' && npm install ' + moduleName + '');
         return true;
     }
 }
+export async function isInstalledPythonModule(containerId, workDir, moduleName) {
+    let piplist = await executeInContainer(containerId, 'cd ' + workDir + ' && pip show ' + moduleName + '');
+    return (!!piplist.stdout.trim()) && piplist.code === 0;
+}
+export async function initPythonProject(containerId, workDir) {
+    if (pipInit) return;
+    pipInit = true;
+    false && await executeInContainer(containerId, 'cd ' + workDir + ' && pip install --upgrade pip');
+}
+export async function installPythonModules(containerId, workDir, moduleName) {
+    moduleName = moduleName.trim();
+    if (!moduleName) return;
+    await initPythonProject(containerId, workDir);
+    if (!await isInstalledPythonModule(containerId, workDir, moduleName)) {
+        installPIPHistory[moduleName.toLowerCase()] = true;
+        let result = await executeInContainer(containerId, 'cd ' + workDir + ' && pip install ' + moduleName + '');
+        return true;
+    }
+}
+export async function runPythonCode(containerId, workDir, code, requiredPackageNames = []) {
+    for (const packageName of requiredPackageNames) await installPythonModules(containerId, workDir, packageName);
+    const tmpPyFile = getAppPath('.code_' + Math.random() + '.py');
+    const pyFileName = 'AIEXE-data-handling-operation.py';
 
+    code = [
+        `import os`,
+        `os.remove('${pyFileName}')`,
+        code
+    ].join('\n');
+
+    await fs.promises.writeFile(tmpPyFile, code);
+
+    {
+        // console.log('docker cp "' + tmpPyFile + '" "' + containerId + ':' + workDir + '/' + pyFileName + '"');
+        let result = await executeCommand('docker cp "' + tmpPyFile + '" "' + containerId + ':' + workDir + '/' + pyFileName + '"');
+
+        if (result.code !== 0) throw new Error('임시 PY 파일 복사 실패');
+    }
+    await fs.promises.rm(tmpPyFile);
+
+
+    let result = await executeInContainer(containerId, 'cd ' + workDir + ' && python ' + pyFileName);
+    result.output = `${result.stderr}\n\n${result.stdout}`;
+    return result;
+
+}
 export async function runNodeJSCode(containerId, workDir, code, requiredPackageNames = []) {
     for (const packageName of requiredPackageNames) await installNodeModules(containerId, workDir, packageName);
     const tmpJsFile = getAppPath('.code_' + Math.random() + '.js');
