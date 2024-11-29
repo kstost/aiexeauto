@@ -20,7 +20,7 @@ let spinners = {};
 
 // Collecting prompts in one place
 const prompts = {
-    systemPrompt: (mission, whattodo) => [
+    systemPrompt: (mission, whattodo, useDocker) => [
         '컴퓨터 작업 실행 에이전트로서, MAIN MISSION을 완수하기 위한 SUB MISSION을 수행하기 위해 필요한 작업을 수행합니다.',
         '',
         `- MAIN MISSION: "${mission}"`,
@@ -60,11 +60,26 @@ const prompts = {
         '      #### INSTRUCTION',
         '      - 삭제할 디렉토리의 경로를 제공해주세요',
         '   ',
-        '   ### cdnjs_finder',
-        '   - CDN 라이브러리 URL을 찾습니다.',
-        '      #### INSTRUCTION',
-        '      - 패키지 이름을 제공해주세요',
-        '   ',
+        // '   ### cdnjs_finder',
+        // '   - CDN 라이브러리 URL을 찾습니다.',
+        // '      #### INSTRUCTION',
+        // '      - 패키지 이름을 제공해주세요',
+        // '   ',
+        useDocker ? '   ### apt_install' : '[REMOVE]',
+        useDocker ? '   - apt 패키지를 설치합니다.' : '[REMOVE]',
+        useDocker ? '      #### INSTRUCTION' : '[REMOVE]',
+        useDocker ? '      - 설치할 패키지 이름을 제공해주세요' : '[REMOVE]',
+        useDocker ? '   ' : '[REMOVE]',
+        true ? '   ### which_command' : '[REMOVE]',
+        true ? '   - 쉘 명령어가 존재하는지 확인합니다.' : '[REMOVE]',
+        true ? '      #### INSTRUCTION' : '[REMOVE]',
+        true ? '      - which로 확인할 쉘 명령어를 제공해주세요' : '[REMOVE]',
+        true ? '   ' : '[REMOVE]',
+        true ? '   ### run_command' : '[REMOVE]',
+        true ? '   - 쉘 명령어를 실행합니다.' : '[REMOVE]',
+        true ? '      #### INSTRUCTION' : '[REMOVE]',
+        true ? '      - 실행할 쉘 명령어를 제공해주세요' : '[REMOVE]',
+        true ? '   ' : '[REMOVE]',
         '   ### generate_code',
         '   - NodeJS 코드를 생성하여 작업을 수행합니다.',
         '      #### INSTRUCTION',
@@ -75,7 +90,8 @@ const prompts = {
         '      - 테이블로 출력할 때에는 `console.table`을 사용하세요.',
         '      - 작업을 수행하는 에이전트를 위해 근거가 되는 모든 결과를 출력하세요.',
         '      - 작업 성공여부를 판단하기 위한 근거를 모든 코드 수행 라인마다 출력하세요.',
-        '      - 시각화 처리가 필요한 경우는 cdnjs_finder 도구를 사용하여 적절한 시각화 도구의 cdnjs URL을 검색후 html,css,js 웹페이지형태로 시각화 결과물을 생성하세요.',
+        // '      - 시각화 처리가 필요한 경우는 cdnjs_finder 도구를 사용하여 적절한 시각화 도구의 cdnjs URL을 검색후 html,css,js 웹페이지형태로 시각화 결과물을 생성하세요.',
+        '      - 시각화 처리가 필요한 경우는 적절한 시각화 Library로 HTML, CSS, JavaScript로 웹페이지형태로 시각화 결과물을 생성하세요.',
         '      - 이미지 처리가 필요한 경우는 npm의 sharp 라이브러리를 사용하세요.',
         '      - 쉘 명령어를 실행할 때는 child_process의 spawnSync를 사용하세요.',
         '      - 코드의 수행 후 반드시 프로세스가 종료되어야한다.',
@@ -83,7 +99,7 @@ const prompts = {
         '      - 선택적인 작업은 생략합니다.',
         '   ',
         '',
-    ].join('\n'),
+    ].filter(line => line.trim() !== '[REMOVE]').join('\n'),
     systemEvaluationPrompt: (mission) => [
         '컴퓨터 작업 실행 에이전트로서, MISSION이 완전하게 완료되었는지 엄격고 논리적으로 검증하고 평가하기 위해 필요한 작업을 수행합니다.',
         '이미 검증을 위한 충분한 OUTPUT이 존재하고 미션이 완수되었다고 판단되면 ENDOFMISSION을 응답하고 그것이 아니라면 NOTSOLVED를 응답.',
@@ -140,9 +156,10 @@ const createSpinner = (text, spinnerType = 'dots') => {
 };
 
 export function omitMiddlePart(text, length = 1024) {
-    return text.length > length
+    text = text.trim();
+    return (text.length > length
         ? text.substring(0, length / 2) + '\n\n...(middle part omitted due to length)...\n\n' + text.substring(text.length - length / 2)
-        : text;
+        : text).trim();
 }
 
 export async function solveLogic({ PORT, server, multiLineMission, dataSourcePath, dataOutputPath }) {
@@ -355,7 +372,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 console.log(chalk.bold.yellowBright(`📌${whattodo}`));
                 spinners.iter = createSpinner('AI가 코드를 생성하는 중...');
                 let actData = await chatCompletion(
-                    prompts.systemPrompt(multiLineMission, whattodo, dataSourcePath),
+                    prompts.systemPrompt(multiLineMission, whattodo, useDocker),
                     makeRealTransaction(multiLineMission, 'coding', whatdidwedo, whattodo, evaluationText),
                     'generateCode'
                 );
@@ -386,6 +403,39 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                         `    const isDirectory = fs.statSync('${actData.input.directory_path}/'+item).isDirectory();`,
                         `    if(!isDirectory) console.log('📄 ' + '${actData.input.directory_path}/'+item);`,
                         `}`,
+                    ].join('\n');
+                } else if (actData.name === 'apt_install') {
+                    javascriptCode = [
+                        `const aptInstall = require('aptInstall');`,
+                        `console.log(await aptInstall('${actData.input.package_name}'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
+                        `const { spawnSync } = require('child_process');`,
+                        `const result = spawnSync('apt', ['install', '-y', '${actData.input.package_name}'], { stdio: ['pipe', 'pipe', 'pipe'], shell: true, encoding: 'utf-8' });`,
+                        `console.log(result.stdout.toString());`,
+                        `console.log(result.stderr.toString());`,
+                    ].join('\n');
+                } else if (actData.name === 'which_command') {
+                    javascriptCode = [
+                        `const whichCommand = require('whichCommand');`,
+                        `console.log(await whichCommand('${actData.input.command}'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
+                        `const { spawnSync } = require('child_process');`,
+                        `const result = spawnSync('which', ['${actData.input.command}'], { stdio: ['pipe', 'pipe', 'pipe'], shell: true, encoding: 'utf-8' });`,
+                        `console.log((result.stderr.toString()+result.stdout.toString()).trim().length===0?'(❌ ${actData.input.command} 명령어가 존재하지 않습니다)':result.stdout.toString());`,
+                    ].join('\n');
+                } else if (actData.name === 'run_command') {
+                    javascriptCode = [
+                        `const runCommand = require('runCommand');`,
+                        `console.log(await runCommand('${actData.input.command}'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
+                        `const { spawnSync } = require('child_process');`,
+                        `const result = spawnSync('${actData.input.command}', [], { stdio: ['pipe', 'pipe', 'pipe'], shell: true, encoding: 'utf-8' });`,
+                        `console.log(result.stdout.toString());`,
+                        `console.log(result.stderr.toString());`,
+                        `console.log((result.stderr.toString()+result.stdout.toString()).trim().length===0?'(❌ 실행결과 출력된 내용이 존재하지 않습니다)':'');`,
                     ].join('\n');
                 } else if (actData.name === 'read_file') {
                     javascriptCode = [
@@ -477,7 +527,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     const result = await axios.get('https://api.cdnjs.com/libraries?search=' + packageName + '&fields=description,version');
                     let data = result.data;
                     if (typeof data === 'string') data = JSON.parse(data);
-                    let url_list1 = data.results.filter(packageInfo => packageInfo.latest.includes('.umd.') || packageInfo.latest.endsWith('.js'))
+                    let url_list1 = data.results.filter(packageInfo => packageInfo.latest.includes('.umd.') && packageInfo.latest.endsWith('.js'))
                     let sum = [...url_list1];
                     let printData = sum.map(a => `${a.name} - ${a.latest}`).join('\n');
                     if (sum.length === 0) printData = 'NOT FOUND';

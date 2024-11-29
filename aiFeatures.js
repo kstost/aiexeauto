@@ -29,6 +29,7 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
     async function requestChatCompletion(systemPrompt, promptList, model) {
         const llm = await getConfiguration('llm');
         let claudeApiKey = await getConfiguration('claudeApiKey');
+        let useDocker = await getConfiguration('useDocker');
         claudeApiKey = claudeApiKey.trim();
         if (!claudeApiKey) throw new Error('Claude API 키가 설정되어 있지 않습니다.');
         if (llm === 'claude') {
@@ -93,17 +94,27 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                         "description": "Remove a directory recursively.",
                         "input_schema": convertJsonToResponseFormat({ directory_path: "" }, { directory_path: "directory path to remove recursively, e.g, ./program" }).json_schema.schema
                     },
-                    {
-                        "name": "cdnjs_finder",
-                        "description": "Find a CDN library URL.",
-                        "input_schema": convertJsonToResponseFormat({ package_name: "" }, { package_name: "package name to find, e.g, jquery" }).json_schema.schema
-                    },
+                    useDocker ? {
+                        "name": "apt_install",
+                        "description": "Install a package using apt.",
+                        "input_schema": convertJsonToResponseFormat({ package_name: "" }, { package_name: "package name to install, e.g, ffmpeg" }).json_schema.schema
+                    } : null,
+                    true ? {
+                        "name": "which_command",
+                        "description": "Check if a command exists.",
+                        "input_schema": convertJsonToResponseFormat({ command: "" }, { command: "command to check, e.g, ffmpeg" }).json_schema.schema
+                    } : null,
+                    true ? {
+                        "name": "run_command",
+                        "description": "Run a shell command.",
+                        "input_schema": convertJsonToResponseFormat({ command: "" }, { command: "shell command to run, e.g, ls -al" }).json_schema.schema
+                    } : null,
                     {
                         "name": "generate_code",
                         "description": "generate a code.",
                         "input_schema": convertJsonToResponseFormat({ nodejs_code: "" }, { nodejs_code: "nodejs code for the only one task" }).json_schema.schema
                     },
-                ],
+                ].filter(t => t !== null),
             }
             let tools = toolsList[callMode];
             const data = {
