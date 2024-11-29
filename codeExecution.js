@@ -53,17 +53,19 @@ export function isInstalledNpmPackage(packageName) {
     return !!installHistory[packageName];
 }
 export async function installNpmPackage(page, packageName) {
-    const result = await page.evaluate(async (packageName) => {
+    const result = await page.evaluate(async (packageName, npmInit, installHistory) => {
         if (!npmInit) {
-            npmInit = true;
             await window._electrons.spawn('npm', ['init', '-y']);
+            npmInit = true;
         }
         if (!installHistory[packageName]) {
             await window._electrons.spawn('npm', ['install', packageName]);
             installHistory[packageName] = true;
-            return true;
         }
-    }, packageName);
+        return { npmInit, installHistory };
+    }, packageName, npmInit, installHistory);
+    Object.keys(result.installHistory).forEach(name => installHistory[name] = true);
+    npmInit = result.npmInit;
 }
 export async function runCode(page, code, requiredPackageNames) {
     const result = await page.evaluate(async (code, requiredPackageNames) => {
