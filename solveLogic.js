@@ -476,7 +476,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     if (useDocker) {
                         await installNodeModules(containerId, dockerWorkDir, packageName);
                     } else {
-                        await installNpmPackage(packageName);
+                        await installNpmPackage(page, packageName);
                     }
                     if (spinners.iter) spinners.iter.succeed(`${packageName} 설치 완료`);
                 }

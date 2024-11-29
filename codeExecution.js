@@ -52,7 +52,7 @@ let npmInit = false;
 export function isInstalledNpmPackage(packageName) {
     return !!installHistory[packageName];
 }
-export async function installNpmPackage(packageName) {
+export async function installNpmPackage(page, packageName) {
     const result = await page.evaluate(async (packageName) => {
         if (!npmInit) {
             npmInit = true;
@@ -67,7 +67,7 @@ export async function installNpmPackage(packageName) {
 }
 export async function runCode(page, code, requiredPackageNames) {
     const result = await page.evaluate(async (code, requiredPackageNames) => {
-        for (let packageName of requiredPackageNames) await installNpmPackage(packageName);
+        for (let packageName of requiredPackageNames) await installNpmPackage(page, packageName);
         const operation = `
         try{
             {
