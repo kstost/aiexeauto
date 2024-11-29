@@ -365,27 +365,49 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     skipNpmInstall = false;
                 } else if (actData.name === 'list_directory') {
                     javascriptCode = [
-                        `const fs = require('fs');`,
-                        `const result = fs.readdirSync('${actData.input.directory_path}');`,
-                        `console.log('📁 Directory Contents of ${actData.input.directory_path}');`,
-                        `console.log(result.join('\\n'));`,
+                        `const listDirectory = require('listDirectory');`,
+                        `console.log(await listDirectory('${actData.input.directory_path}'));`,
                     ].join('\n');
                     javascriptCodeBack = [
                         `const fs = require('fs');`,
+                        `const exists = fs.existsSync('${actData.input.directory_path}');`,
+                        `if(!exists){console.log('❌ ${actData.input.directory_path} 조회할 디렉토리가 존재하지 않습니다');process.exit(0);}`,
                         `const result = fs.readdirSync('${actData.input.directory_path}');`,
+                        `result = result.filter(item => !['node_modules', 'package.json', 'package-lock.json'].includes(item);`,
                         `console.log('📁 Directory Contents of ${actData.input.directory_path}');`,
-                        `console.log(result.filter(item => !['node_modules', 'package.json', 'package-lock.json'].includes(item)).join('\\n'));`,
+                        `if(result.length === 0){console.log('❌ 디렉토리가 비어있습니다');process.exit(0);}`,
+                        `for(let item of result) {`,
+                        `    const isDirectory = fs.statSync(item).isDirectory();`,
+                        `    console.log((isDirectory ? '📁 ' : '📄 ') + item);`,
+                        `}`,
                     ].join('\n');
                 } else if (actData.name === 'read_file') {
                     javascriptCode = [
+                        `const readFile = require('readFile');`,
+                        `console.log(await readFile('${actData.input.file_path}'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
                         `const fs = require('fs');`,
+                        `const exists = fs.existsSync('${actData.input.file_path}');`,
+                        `if(!exists){console.log('❌ ${actData.input.file_path} 읽을 파일이 존재하지 않습니다');process.exit(0);}`,
                         `const result = fs.readFileSync('${actData.input.file_path}', 'utf8');`,
+                        `const trimmed = result.trim();`,
+                        `if (trimmed.length === 0||fs.statSync('${actData.input.file_path}').size === 0) {`,
+                        `    console.log('❌ ${actData.input.file_path} 파일이 비어있습니다 (0 bytes)');`,
+                        `    process.exit(0);`,
+                        `}`,
                         `console.log('📄 Contents of ${actData.input.file_path}');`,
                         `console.log(result);`,
                     ].join('\n');
                 } else if (actData.name === 'remove_file') {
                     javascriptCode = [
+                        `const removeFile = require('removeFile');`,
+                        `console.log(await removeFile('${actData.input.file_path}'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
                         `const fs = require('fs');`,
+                        `const exists = fs.existsSync('${actData.input.file_path}');`,
+                        `if(!exists){console.log('❌ ${actData.input.file_path} 삭제할 파일이 존재하지 않습니다');process.exit(0);}`,
                         `fs.unlinkSync('${actData.input.file_path}');`,
                         `const result = fs.existsSync('${actData.input.file_path}');`,
                         `if (result) {`,
@@ -396,7 +418,13 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     ].join('\n');
                 } else if (actData.name === 'remove_directory_recursively') {
                     javascriptCode = [
+                        `const removeDirectory = require('removeDirectory');`,
+                        `console.log(await removeDirectory('${actData.input.file_path}'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
                         `const fs = require('fs');`,
+                        `const exists = fs.existsSync('${actData.input.directory_path}');`,
+                        `if(!exists){console.log('❌ ${actData.input.directory_path} 삭제할 디렉토리가 존재하지 않습니다');process.exit(0);}`,
                         `fs.rmSync('${actData.input.directory_path}', { recursive: true, force: true });`,
                         `const result = fs.existsSync('${actData.input.directory_path}');`,
                         `if (result) {`,
@@ -407,7 +435,13 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     ].join('\n');
                 } else if (actData.name === 'rename_file_or_directory') {
                     javascriptCode = [
+                        `const renameFileOrDirectory = require('renameFileOrDirectory');`,
+                        `console.log(await renameFileOrDirectory('${actData.input.old_path}', '${actData.input.new_path}'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
                         `const fs = require('fs');`,
+                        `const exists = fs.existsSync('${actData.input.old_path}');`,
+                        `if(!exists){console.log('❌ ${actData.input.old_path} 이름을 변경할 파일 또는 디렉토리가 존재하지 않습니다');process.exit(0);}`,
                         `fs.renameSync('${actData.input.old_path}', '${actData.input.new_path}');`,
                         `const result = fs.existsSync('${actData.input.new_path}');`,
                         `if (result) {`,
@@ -523,7 +557,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     break;
                 } else {
                     if (spinners.iter) spinners.iter.succeed(`검증완료`);
-                    console.log('📃 검증결과', chalk.bold.redBright(reason));
+                    console.log('📃 검증결과', chalk.bold.magentaBright(reason));
                     evaluationText = reason;
                 }
             }

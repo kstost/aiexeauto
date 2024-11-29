@@ -27,6 +27,7 @@ tmp/
 temp/
 *.tmp
 data/
+data_*/
 # tasks/
 data-output/
 dataout*/
