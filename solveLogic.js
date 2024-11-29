@@ -78,6 +78,8 @@ const prompts = {
         '      - 시각화 처리가 필요한 경우는 cdnjs_finder 도구를 사용하여 적절한 시각화 도구의 cdnjs URL을 검색후 html,css,js 웹페이지형태로 시각화 결과물을 생성하세요.',
         '      - 이미지 처리가 필요한 경우는 npm의 sharp 라이브러리를 사용하세요.',
         '      - 쉘 명령어를 실행할 때는 child_process의 spawnSync를 사용하세요.',
+        '      - 코드의 수행 후 반드시 프로세스가 종료되어야한다.',
+        '      - 서버를 띄우는 작동은 절대로 수행하지 마세요.',
         '      - 선택적인 작업은 생략합니다.',
         '   ',
         '',
@@ -146,7 +148,7 @@ const createSpinner = (text, spinnerType = 'dots') => {
 
 export function omitMiddlePart(text, length = 1024) {
     return text.length > length
-        ? text.substring(0, length / 2) + '\n\n...(middle part omitted due to length)\n\n' + text.substring(text.length - length / 2)
+        ? text.substring(0, length / 2) + '\n\n...(middle part omitted due to length)...\n\n' + text.substring(text.length - length / 2)
         : text;
 }
 
@@ -436,10 +438,13 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     ].join('\n');
                 } else if (actData.name === 'cdnjs_finder') {
                     const packageName = actData.input.package_name;
-                    const result = await axios.get('https://api.cdnjs.com/libraries?search=' + packageName);
+                    const result = await axios.get('https://api.cdnjs.com/libraries?search=' + packageName + '&fields=description,version');
                     let data = result.data;
                     if (typeof data === 'string') data = JSON.parse(data);
-                    let url = data.results.filter(packageInfo => packageInfo.name.toLowerCase() === packageName.toLowerCase() && packageInfo.latest.endsWith(`.js`))[0]?.latest;
+                    let url_list1 = data.results.filter(packageInfo => packageInfo.latest.includes('.umd.') || packageInfo.latest.endsWith('.js'))
+                    let sum = [...url_list1];
+                    let printData = sum.map(a => `${a.name} - ${a.latest}`).join('\n');
+                    if (sum.length === 0) printData = 'NOT FOUND';
                     javascriptCode = [
                         `const cdnjsFinder = require('cdnjsFinder');`,
                         `const cdnLibraryURL = await cdnjsFinder('${actData.input.package_name}');`,
@@ -448,7 +453,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     ].join('\n');
                     javascriptCodeBack = [
                         `console.log('🌏 CDN Library URL of ${actData.input.package_name}');`,
-                        `console.log('${url ? url : 'Not found'}');`,
+                        `console.log((${JSON.stringify({ printData })}).printData);`,
                     ].join('\n');
                 }
                 console.log(boxen(highlightCode(javascriptCode), {

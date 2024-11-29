@@ -123,6 +123,10 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                         await new Promise(resolve => setTimeout(resolve, 5000));
                         continue;
                     }
+                    if (errorMessage.includes('Overloaded')) {
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        continue;
+                    }
                     throw new Error(errorMessage);
                 }
                 if (tools) {
