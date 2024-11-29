@@ -40,10 +40,18 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                 "content-type": "application/json"
             };
             let tool_choice_list = {
+                getRequiredPackageNames: { type: "tool", name: "npm_package_names" },
                 evaluateCode: { type: "tool", name: "completion_verdict" },
                 generateCode: { type: "any" }
             };
             let toolsList = {
+                getRequiredPackageNames: [
+                    {
+                        "name": "npm_package_names",
+                        "description": "get the names of npm packages used in the code.",
+                        "input_schema": convertJsonToResponseFormat({ npm_package_list: [""] }, { npm_package_list: "array of npm package names used in the code" }).json_schema.schema
+                    },
+                ],
                 evaluateCode: [
                     {
                         "name": "completion_verdict",

@@ -170,22 +170,29 @@ export async function exportFromDocker(containerId, workDir, outputDir) {
 }
 
 export async function initNodeProject(containerId, workDir) {
+    if (npmInit) return;
+    npmInit = true;
     let result = await executeInContainer(containerId, 'cd ' + workDir + ' && npm init -y');
 }
 
+const installHistory = {};
+let npmInit = false;
+export function isInstalledNodeModule(moduleName) {
+    return !!installHistory[moduleName];
+}
 export async function installNodeModules(containerId, workDir, moduleName) {
-    let result = await executeInContainer(containerId, 'cd ' + workDir + ' && npm install ' + moduleName);
+    moduleName = moduleName.trim();
+    if (!moduleName) return;
+    await initNodeProject(containerId, workDir);
+    if (!installHistory[moduleName]) {
+        installHistory[moduleName] = true;
+        let result = await executeInContainer(containerId, 'cd ' + workDir + ' && npm install ' + moduleName + '');
+        return true;
+    }
 }
 
 export async function runNodeJSCode(containerId, workDir, code, requiredPackageNames = []) {
-    {
-        if (requiredPackageNames.length > 0) {
-            for (const packageName of requiredPackageNames) {
-                await installNodeModules(containerId, workDir, packageName);
-            }
-        }
-
-    }
+    for (const packageName of requiredPackageNames) await installNodeModules(containerId, workDir, packageName);
     const tmpJsFile = getAppPath('.code_' + Math.random() + '.js');
     const jsFileName = 'AIEXE-data-handling-operation.js';
 

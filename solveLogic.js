@@ -9,9 +9,9 @@ import axios from 'axios';
 
 import { importData, exportData } from './dataHandler.js';
 import { chatCompletion } from './aiFeatures.js';
-import { checkValidSyntaxJavascript, stripFencedCodeBlocks, runCode, getRequiredPackageNames } from './codeExecution.js';
+import { isInstalledNpmPackage, installNpmPackage, checkValidSyntaxJavascript, stripFencedCodeBlocks, runCode, getRequiredPackageNames } from './codeExecution.js';
 import { getLastDirectoryName } from './dataHandler.js';
-import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, runNodeJSCode, doesDockerImageExist } from './docker.js';
+import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, isInstalledNodeModule, installNodeModules, runNodeJSCode, doesDockerImageExist } from './docker.js';
 import fs from 'fs';
 import { getConfiguration } from './system.js';
 
@@ -93,15 +93,8 @@ const prompts = {
     ].join('\n'),
 
     packageNamesPrompt: [
-        '주어진 Node.js 코드를 실행하기 위해 필요한 패키지들을 나열하세요.',
-        '',
-        '출력 형식:',
-        '- 설명 없이 패키지 이름만 JSON 배열로 반환하세요.',
-        '- 마크다운 코드 블록을 사용하지 마세요.',
-        '- 자연어 텍스트를 포함하지 마세요.',
-        '',
-        '예시 출력:',
-        '["패키지명1", "패키지명2", ...]',
+        '주어진 Node.js 코드를 실행하기 위해 필요한 npm 패키지들을 파악하는 역할을 합니다.',
+        '코드에 사용된 모든 npm 패키지 이름을 배열로 반환해주세요.',
     ].join('\n'),
 };
 
@@ -314,6 +307,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
         }
         const dockerWorkDir = await getConfiguration('dockerWorkDir');
         const maxIterations = await getConfiguration('maxIterations');
+        const useDocker = await getConfiguration('useDocker');
 
         // 데이터 임포트 스피너
         spinners.import = createSpinner('데이터를 가져오는 중...');
@@ -335,6 +329,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             let whatdidwedo = '';
             let whattodo = '';
             let validationMode = nextCodeForValidation ? true : false;
+            let skipNpmInstall = true;
 
             if (!validationMode) {
                 processTransactions.length === 0 && processTransactions.push({ class: 'output', data: null });
@@ -367,6 +362,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 if (spinners.iter) spinners.iter.succeed('AI가 코드 생성을 완료했습니다');
                 if (actData.name === 'generate_code') {
                     javascriptCode = actData.input.nodejs_code;
+                    skipNpmInstall = false;
                 } else if (actData.name === 'list_directory') {
                     javascriptCode = [
                         `const fs = require('fs');`,
@@ -469,24 +465,28 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 javascriptCode = nextCodeForValidation;
                 nextCodeForValidation = null;
             }
-
-            if (validationMode) spinners.iter = createSpinner('검증 코드 실행을 준비하는 중...');
-            else spinners.iter = createSpinner('코드 실행을 준비하는 중...');
-
             javascriptCode = stripFencedCodeBlocks(javascriptCode);
-            requiredPackageNames = await getRequiredPackageNames(javascriptCode, prompts);
-
-            if (spinners.iter) {
-                if (validationMode) spinners.iter.succeed('검증 코드 실행을 준비했습니다.');
-                else spinners.iter.succeed('코드 실행을 준비했습니다.');
+            requiredPackageNames = null;
+            if (!skipNpmInstall) requiredPackageNames = await getRequiredPackageNames(javascriptCode, prompts);
+            if (!requiredPackageNames) requiredPackageNames = [];
+            for (const packageName of requiredPackageNames) {
+                let installed = useDocker ? isInstalledNodeModule(packageName) : isInstalledNpmPackage(packageName);
+                if (!installed) {
+                    spinners.iter = createSpinner(`${packageName} 설치중...`);
+                    if (useDocker) {
+                        await installNodeModules(containerId, dockerWorkDir, packageName);
+                    } else {
+                        await installNpmPackage(packageName);
+                    }
+                    if (spinners.iter) spinners.iter.succeed(`${packageName} 설치 완료`);
+                }
             }
-
+            requiredPackageNames = [];
             spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
             let result;
             {
                 let javascriptCodeToRun = javascriptCodeBack ? javascriptCodeBack : javascriptCode;
-                if (await getConfiguration('useDocker')) {
-                    const dockerWorkDir = await getConfiguration('dockerWorkDir');
+                if (useDocker) {
                     result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCodeToRun, requiredPackageNames);
                 } else {
                     result = await runCode(page, javascriptCodeToRun, requiredPackageNames);

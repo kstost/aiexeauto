@@ -45,17 +45,29 @@ export function stripFencedCodeBlocks(content) {
 
     return code.trim(); // 앞뒤 공백을 제거합니다.
 }
-export async function runCode(page, code, requiredPackageNames) {
-    // console.log('Running code...');
-    const result = await page.evaluate(async (code, requiredPackageNames) => {
-        if (requiredPackageNames.length > 0) {
+
+
+const installHistory = {};
+let npmInit = false;
+export function isInstalledNpmPackage(packageName) {
+    return !!installHistory[packageName];
+}
+export async function installNpmPackage(packageName) {
+    const result = await page.evaluate(async (packageName) => {
+        if (!npmInit) {
+            npmInit = true;
             await window._electrons.spawn('npm', ['init', '-y']);
-            for (let packageName of requiredPackageNames) {
-                packageName = packageName.trim();
-                if (!packageName) continue;
-                await window._electrons.spawn('npm', ['install', packageName]);
-            }
         }
+        if (!installHistory[packageName]) {
+            await window._electrons.spawn('npm', ['install', packageName]);
+            installHistory[packageName] = true;
+            return true;
+        }
+    }, packageName);
+}
+export async function runCode(page, code, requiredPackageNames) {
+    const result = await page.evaluate(async (code, requiredPackageNames) => {
+        for (let packageName of requiredPackageNames) await installNpmPackage(packageName);
         const operation = `
         try{
             {
@@ -87,10 +99,11 @@ export async function getRequiredPackageNames(javascriptCode, prompts) {
         [{ role: "user", content: javascriptCode }],
         'getRequiredPackageNames'
     );
+    let npmList = packageNamesResponse?.input?.npm_package_list;
+    if (!npmList) npmList = [];
+    if (npmList.constructor !== Array) npmList = [];
     try {
-        const parsed = JSON.parse(packageNamesResponse);
-        if (!Array.isArray(parsed)) throw new Error('Package list is not in array format.');
-        requiredPackageNames = parsed.filter(name => typeof name === 'string' && name.trim() !== '');
+        requiredPackageNames = npmList.filter(name => typeof name === 'string' && name.trim() !== '');
     } catch (e) {
         requiredPackageNames = [];
     }
