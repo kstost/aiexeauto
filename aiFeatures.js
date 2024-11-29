@@ -71,6 +71,26 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                         "input_schema": convertJsonToResponseFormat({ url: "" }, { url: "url to read, e.g, https://cokac.com/robots.txt" }).json_schema.schema
                     },
                     {
+                        "name": "rename_file_or_directory",
+                        "description": "Rename a file or directory.",
+                        "input_schema": convertJsonToResponseFormat({ old_path: "", new_path: "" }, { old_path: "old file or directory path to rename, e.g, ./program/package.json", new_path: "new file or directory path to rename, e.g, ./program/package2.json" }).json_schema.schema
+                    },
+                    {
+                        "name": "remove_file",
+                        "description": "Remove a file.",
+                        "input_schema": convertJsonToResponseFormat({ file_path: "" }, { file_path: "file path to remove, e.g, ./program/package.json" }).json_schema.schema
+                    },
+                    {
+                        "name": "remove_directory_recursively",
+                        "description": "Remove a directory recursively.",
+                        "input_schema": convertJsonToResponseFormat({ directory_path: "" }, { directory_path: "directory path to remove recursively, e.g, ./program" }).json_schema.schema
+                    },
+                    {
+                        "name": "cdnjs_finder",
+                        "description": "Find a CDN library URL.",
+                        "input_schema": convertJsonToResponseFormat({ package_name: "" }, { package_name: "package name to find, e.g, jquery" }).json_schema.schema
+                    },
+                    {
                         "name": "generate_code",
                         "description": "generate a code.",
                         "input_schema": convertJsonToResponseFormat({ nodejs_code: "" }, { nodejs_code: "nodejs code for the only one task" }).json_schema.schema

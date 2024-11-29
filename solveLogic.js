@@ -5,6 +5,7 @@ import { dirname } from 'path';
 import { highlight } from 'cli-highlight';
 import ora from 'ora';
 import boxen from 'boxen';
+import axios from 'axios';
 
 import { importData, exportData } from './dataHandler.js';
 import { chatCompletion } from './aiFeatures.js';
@@ -44,6 +45,26 @@ const prompts = {
         '      #### INSTRUCTION',
         '      - URL을 제공해주세요',
         '   ',
+        '   ### rename_file_or_directory',
+        '   - 파일 또는 디렉토리의 이름을 변경합니다.',
+        '      #### INSTRUCTION',
+        '      - 변경할 파일 또는 디렉토리의 경로와 변경할 이름을 제공해주세요',
+        '   ',
+        '   ### remove_file',
+        '   - 파일을 삭제합니다.',
+        '      #### INSTRUCTION',
+        '      - 삭제할 파일의 경로를 제공해주세요',
+        '   ',
+        '   ### remove_directory_recursively',
+        '   - 디렉토리를 재귀적으로 삭제합니다.',
+        '      #### INSTRUCTION',
+        '      - 삭제할 디렉토리의 경로를 제공해주세요',
+        '   ',
+        '   ### cdnjs_finder',
+        '   - CDN 라이브러리 URL을 찾습니다.',
+        '      #### INSTRUCTION',
+        '      - 패키지 이름을 제공해주세요',
+        '   ',
         '   ### generate_code',
         '   - NodeJS 코드를 생성하여 작업을 수행합니다.',
         '      #### INSTRUCTION',
@@ -54,9 +75,8 @@ const prompts = {
         '      - 테이블로 출력할 때에는 `console.table`을 사용하세요.',
         '      - 작업을 수행하는 에이전트를 위해 근거가 되는 모든 결과를 출력하세요.',
         '      - 작업 성공여부를 판단하기 위한 근거를 모든 코드 수행 라인마다 출력하세요.',
-        '      - 시각화 처리가 필요한 경우는 html,css,js 웹페이지형태로 시각화 결과물을 생성하세요.',
-        '      - Data Analysis 처리에는 Chart.js, ECharts, D3.js등의 라이브러리 사용.',
-        '      - 이미지 처리가 필요한 경우는 sharp 라이브러리를 사용하세요.',
+        '      - 시각화 처리가 필요한 경우는 cdnjs_finder 도구를 사용하여 적절한 시각화 도구의 cdnjs URL을 검색후 html,css,js 웹페이지형태로 시각화 결과물을 생성하세요.',
+        '      - 이미지 처리가 필요한 경우는 npm의 sharp 라이브러리를 사용하세요.',
         '      - 쉘 명령어를 실행할 때는 child_process의 spawnSync를 사용하세요.',
         '      - 선택적인 작업은 생략합니다.',
         '   ',
@@ -124,6 +144,12 @@ const createSpinner = (text, spinnerType = 'dots') => {
     return spinner;
 };
 
+export function omitMiddlePart(text, length = 1024) {
+    return text.length > length
+        ? text.substring(0, length / 2) + '\n\n...(middle part omitted due to length)\n\n' + text.substring(text.length - length / 2)
+        : text;
+}
+
 export async function solveLogic({ PORT, server, multiLineMission, dataSourcePath, dataOutputPath }) {
     const processTransactions = [];
     function makeRealTransaction(multiLineMission, type, whatdidwedo, whattodo, evaluationText) {
@@ -133,9 +159,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             const code = processTransactions[i].class === 'code' ? processTransactions[i].data : null;
             let output = processTransactions[i].class === 'output' ? processTransactions[i].data : null;
             if (output) {
-                output = output.length > 1024
-                    ? output.substring(0, 1024) + '\n\n...(output is too long)'
-                    : output;
+                output = omitMiddlePart(output);
             }
 
             let data = {
@@ -165,9 +189,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
 
         let output = processTransactions.at(-1).data;
         if (output) {
-            output = output.length > 1024
-                ? output.substring(0, 1024) + '\n\n...(output is too long)'
-                : output;
+            output = omitMiddlePart(output);
         }
 
         const last = (
@@ -306,6 +328,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
         while (iterationCount < maxIterations || !maxIterations) {
             iterationCount++;
             let javascriptCode = '';
+            let javascriptCodeBack = '';
             let requiredPackageNames;
             let whatdidwedo = '';
             let whattodo = '';
@@ -346,19 +369,86 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCode = [
                         `const fs = require('fs');`,
                         `const result = fs.readdirSync('${actData.input.directory_path}');`,
+                        `console.log('📁 Directory Contents of ${actData.input.directory_path}');`,
                         `console.log(result.join('\\n'));`,
+                    ].join('\n');
+                    javascriptCodeBack = [
+                        `const fs = require('fs');`,
+                        `const result = fs.readdirSync('${actData.input.directory_path}');`,
+                        `console.log('📁 Directory Contents of ${actData.input.directory_path}');`,
+                        `console.log(result.filter(item => !['node_modules', 'package.json', 'package-lock.json'].includes(item)).join('\\n'));`,
                     ].join('\n');
                 } else if (actData.name === 'read_file') {
                     javascriptCode = [
                         `const fs = require('fs');`,
                         `const result = fs.readFileSync('${actData.input.file_path}', 'utf8');`,
+                        `console.log('📄 Contents of ${actData.input.file_path}');`,
                         `console.log(result);`,
                     ].join('\n');
+                } else if (actData.name === 'remove_file') {
+                    javascriptCode = [
+                        `const fs = require('fs');`,
+                        `fs.unlinkSync('${actData.input.file_path}');`,
+                        `const result = fs.existsSync('${actData.input.file_path}');`,
+                        `if (result) {`,
+                        `    console.log('❌ 파일이 여전히 존재합니다: ${actData.input.file_path}');`,
+                        `} else {`,
+                        `    console.log('✅ 파일이 성공적으로 삭제되었습니다');`,
+                        `}`,
+                    ].join('\n');
+                } else if (actData.name === 'remove_directory_recursively') {
+                    javascriptCode = [
+                        `const fs = require('fs');`,
+                        `fs.rmSync('${actData.input.directory_path}', { recursive: true, force: true });`,
+                        `const result = fs.existsSync('${actData.input.directory_path}');`,
+                        `if (result) {`,
+                        `    console.log('❌ 디렉토리가 여전히 존재합니다: ${actData.input.directory_path}');`,
+                        `} else {`,
+                        `    console.log('✅ 디렉토리가 성공적으로 삭제되었습니다');`,
+                        `}`,
+                    ].join('\n');
+                } else if (actData.name === 'rename_file_or_directory') {
+                    javascriptCode = [
+                        `const fs = require('fs');`,
+                        `fs.renameSync('${actData.input.old_path}', '${actData.input.new_path}');`,
+                        `const result = fs.existsSync('${actData.input.new_path}');`,
+                        `if (result) {`,
+                        `    console.log('✅ 파일 또는 디렉토리가 성공적으로 이름이 변경되었습니다');`,
+                        `} else {`,
+                        `    console.log('❌ 파일 또는 디렉토리가 이름 변경에 실패했습니다');`,
+                        `}`,
+                    ].join('\n');
                 } else if (actData.name === 'read_url') {
+                    const url = actData.input.url;
+                    const result = await axios.get(url);
+                    let data = result.data;
+                    if (typeof data !== 'string') data = JSON.stringify(data);
+                    let ob = { data };
                     javascriptCode = [
                         `const axios = require('axios');`,
-                        `const result = await axios.get('${actData.input.url}');`,
+                        `const result = await axios.get('${url}');`,
+                        `console.log('🌏 Contents of ${url}');`,
                         `console.log(result.data);`,
+                    ].join('\n');
+                    javascriptCodeBack = [
+                        `console.log('🌏 Contents of ${url}');`,
+                        `console.log((${JSON.stringify(ob)}).data);`,
+                    ].join('\n');
+                } else if (actData.name === 'cdnjs_finder') {
+                    const packageName = actData.input.package_name;
+                    const result = await axios.get('https://api.cdnjs.com/libraries?search=' + packageName);
+                    let data = result.data;
+                    if (typeof data === 'string') data = JSON.parse(data);
+                    let url = data.results.filter(packageInfo => packageInfo.name.toLowerCase() === packageName.toLowerCase() && packageInfo.latest.endsWith(`.js`))[0]?.latest;
+                    javascriptCode = [
+                        `const cdnjsFinder = require('cdnjsFinder');`,
+                        `const cdnLibraryURL = await cdnjsFinder('${actData.input.package_name}');`,
+                        `console.log('🌏 CDN Library URL of ${actData.input.package_name}');`,
+                        `console.log(cdnLibraryURL);`,
+                    ].join('\n');
+                    javascriptCodeBack = [
+                        `console.log('🌏 CDN Library URL of ${actData.input.package_name}');`,
+                        `console.log('${url ? url : 'Not found'}');`,
                     ].join('\n');
                 }
                 console.log(boxen(highlightCode(javascriptCode), {
@@ -388,11 +478,14 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
 
             spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
             let result;
-            if (await getConfiguration('useDocker')) {
-                const dockerWorkDir = await getConfiguration('dockerWorkDir');
-                result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCode, requiredPackageNames);
-            } else {
-                result = await runCode(page, javascriptCode, requiredPackageNames);
+            {
+                let javascriptCodeToRun = javascriptCodeBack ? javascriptCodeBack : javascriptCode;
+                if (await getConfiguration('useDocker')) {
+                    const dockerWorkDir = await getConfiguration('dockerWorkDir');
+                    result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCodeToRun, requiredPackageNames);
+                } else {
+                    result = await runCode(page, javascriptCodeToRun, requiredPackageNames);
+                }
             }
 
             if (spinners.iter) spinners.iter.succeed(`실행 #${iterationCount}차 완료`);
@@ -404,9 +497,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
 
 
             // 실행 결과를 boxen으로 감싸기
-            const outputPreview = result.output.length > 1024
-                ? result.output.substring(0, 1024) + '...(output is too long)'
-                : result.output;
+            const outputPreview = omitMiddlePart(result.output);
 
             console.log(chalk.bold.yellowBright(outputPreview));
             console.log('');
