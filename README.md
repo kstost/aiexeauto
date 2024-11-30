@@ -1,106 +1,190 @@
 # aiexeauto
 
-aiexeauto는 컴퓨터에서 필요한 작업을 명령을 받아 대신 수행해주는 인공지능 에이전트입니다.
+**aiexeauto**는 자율적으로 사고하고 행동하는 인공지능 에이전트입니다. 사람의 자연어 명령을 이해하고 스스로 판단하여 컴퓨터 작업을 수행하는 혁신적인 CLI 도구입니다. 복잡한 작업도 AI 에이전트가 상황을 분석하고 최적의 방법을 찾아 자동으로 처리합니다.
+
+## 주요 기능
+
+- **자연어로 컴퓨터 제어**: "파일 정리해줘", "동영상 편집해줘"처럼 일상적인 말로 지시하면 AI가 알아서 실행
+- **복잡한 작업도 자동으로**: 파일 관리, 이미지 편집, 문서 작업 등 번거로운 컴퓨터 작업을 AI가 대신 처리
+- **Windows/Mac 모두 사용 가능**: 주요 운영체제를 모두 지원하며, Mac에서는 더 안전한 Docker 환경도 제공
+- **작업 진행 상황 실시간 확인**: AI가 무엇을 하고 있는지 실시간으로 보여주는 깔끔한 화면 제공
+- **안전하고 믿을 수 있는 실행**: API 키는 안전하게 보관되며, 위험한 작업은 실행 전에 한 번 더 확인
+
+## 데모 영상 보기
+
+YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 영상을 시청해보세요!  
+[여기](https://www.youtube.com/watch?v=GkOZ6fG99RI)를 클릭하여 영상을 시청할 수 있습니다.  
+[![비디오 라벨](http://img.youtube.com/vi/GkOZ6fG99RI/0.jpg)](https://www.youtube.com/watch?v=GkOZ6fG99RI)
+
+## 시스템 요구사항
+
+- **Node.js**
+- **운영체제**: 
+  - Windows
+  - macOS
+- **Docker** (선택사항, macOS 전용)
 
 ## 설치 방법
 
 1. **Node.js 설치**
-   - [Node.js 공식 웹사이트](https://nodejs.org/)에서 최신 LTS 버전을 다운로드하여 설치합니다.
+   - [Node.js 공식 웹사이트](https://nodejs.org/)에서 최신 LTS 버전을 다운로드하여 설치
 
 2. **aiexeauto 설치**
 
-   **Windows:**
-   - 작업표시줄 검색창에서 `PowerShell`을 검색하여 `PowerShell` 아이콘을 더블클릭합니다.
-   - 명령어 입력창에 다음 명령어를 입력합니다:
-     ```powershell
-     npm install -g aiexeauto
-     ```
-
-   **macOS:**
-   - 터미널을 열고 다음 명령어를 입력합니다:
-     ```bash
-     sudo npm install -g aiexeauto
-     ```
-
-3. **설정**
-
-   aiexeauto는 Anthropic의 Claude AI 모델을 사용하여 작업을 수행합니다.
-
-   **지원 모델:**
-   - Claude 3 Haiku (추천) - 빠른 응답, 합리적인 가격
-   - Claude 3 Sonnet - 더 정교한 작업 수행 가능
-
-   [Claude 요금제 확인하기](https://www.anthropic.com/pricing#anthropic-api)
-
-   **기본 설정:**
-
-   Windows와 macOS 공통으로 PowerShell 또는 터미널에서 다음 명령어를 입력하여 설정합니다:
-
-   ```bash
-   # API 키 및 모델 설정
-   aiexeauto config claudeApiKey "sk-ant-api...."          # Claude API 키 (기본값: "") https://console.anthropic.com/settings/keys 에서 발급 가능
-   aiexeauto config model "claude-3-5-haiku-20241022"      # AI 모델 선택 (기본값: "claude-3-5-haiku-20241022")
-   aiexeauto config llm "claude"                           # AI 서비스 지정 (기본값: "claude")
-
-   # 실행 환경 설정
-   aiexeauto config maxIterations 0                        # 반복 횟수 (0=무제한) (기본값: 0)
-   aiexeauto config overwriteOutputDir false               # 덮어쓰기 여부 (false: 덮어쓰지 않음, true: 덮어씀) (기본값: false)
-
-   # 도커 설정 (Docker 사용 시)
-   aiexeauto config useDocker true                         # Docker 사용 여부 (true: 사용, false: 사용 안 함) (기본값: false)
-   aiexeauto config dockerImage "my-node-ubuntu"           # Docker 이미지 (기본값: "my-node-ubuntu")
-   aiexeauto config dockerWorkDir "/home/ubuntu/work"      # 작업 디렉터리 (기본값: "/home/ubuntu/work")
+   **Windows**의 경우:
+   1. 윈도우 검색창에서 "PowerShell"을 검색하여 실행합니다
+   2. PowerShell 창이 열리면 아래 명령어를 복사해서 붙여넣고 Enter를 누릅니다:
+   ```powershell
+   npm install -g aiexeauto
    ```
 
-4. **Docker 환경 구성 (선택사항, macOS에서만 사용 가능)**
+   **macOS**의 경우:
+   1. Spotlight(⌘ + Space)에서 "터미널"을 검색하여 실행합니다
+   2. 터미널 창이 열리면 아래 명령어를 복사해서 붙여넣고 Enter를 누릅니다:
+   ```bash
+   sudo npm install -g aiexeauto
+   ```
+   3. 관리자 암호를 입력하라는 메시지가 나타나면 Mac의 로그인 비밀번호를 입력합니다
 
-   - **Docker Desktop 설치**
-     - [Docker 공식 웹사이트](https://www.docker.com/)에서 운영체제에 맞는 버전을 다운로드 및 설치합니다.
+## 기본 설정
 
-   - **aiexeauto Docker 이미지 생성**
+**aiexeauto**는 Anthropic의 Claude AI 모델을 사용합니다.
+
+### API 키 발급
+
+1. [Claude API Console](https://console.anthropic.com/settings/keys)에 접속
+2. 계정 생성 및 로그인
+3. [결제 설정 페이지](https://console.anthropic.com/settings/billing)에서 신용카드 등록 및 비용 결제 설정
+4. API 키 발급
+
+### 설정 명령어
+
+```bash
+# 필수 설정
+aiexeauto config claudeApiKey "sk-ant-api..."    # Claude API 키 설정
+
+# AI 모델 설정
+aiexeauto config model "claude-3-5-haiku-20241022"  # 빠르고 경제적
+# 또는
+aiexeauto config model "claude-3-5-sonnet-20240229" # 더 정교한 작업 수행
+
+# 실행 환경 설정
+aiexeauto config maxIterations 0                 # 반복 횟수 (0=무제한)
+aiexeauto config overwriteOutputDir false        # 출력 디렉토리 덮어쓰기 여부
+```
+
+### Docker 환경 설정 (선택사항, macOS 전용)
+
+1. **Docker 설치**
+   - [Docker Desktop](https://www.docker.com/) 웹사이트 방문
+   - macOS용 Docker Desktop 다운로드
+   - 다운로드한 파일 실행하여 설치
+
+2. **Docker 설정**
+   - Docker Desktop이 실행되고 있는지 상태바에서 확인
+   - 터미널에서 아래 명령어로 설치 확인:
      ```bash
-     # 저장소 클론 및 이미지 빌드
+     docker --version
+     ```
+   - 아래와 같이 Docker 버전 정보가 출력되면 정상 설치된 것입니다:
+     ```bash
+     Docker version 24.0.7, build afdd53b
+     ```
+
+3. **aiexeauto Docker 설정**
+     ```bash
+     aiexeauto config useDocker true
+     aiexeauto config dockerImage "my-node-ubuntu"
+     aiexeauto config dockerWorkDir "/home/ubuntu/work"
+     
+     # Docker 이미지 빌드
      git clone https://github.com/kstost/aiexeauto.git
      cd aiexeauto/my-docker-app
      docker build -t my-node-ubuntu .
-     docker images
      ```
 
-   - **Docker 실행 환경 설정**
-     ```bash
-     # 기본 설정값으로 자동 구성됩니다
-     aiexeauto config dockerImage "my-node-ubuntu"      # 이미지명
-     aiexeauto config useDocker true                    # Docker 활성화
-     aiexeauto config dockerWorkDir "/home/ubuntu/work" # 작업 디렉터리
-     ```
+## 사용 방법
 
-## 사용법
+### 기본 명령어 구조
 
-1. **기본 실행**
+```bash
+aiexeauto "<작업_설명>" <입력_경로> <출력_경로>
+```
+
+- **작업_설명**: 수행할 작업을 자연어로 설명 (또는 설명이 담긴 텍스트 파일 경로)
+- **입력_경로**: 작업에 필요한 데이터가 있는 디렉토리 (선택사항, 생략시 현재 디렉토리에 새 폴더 생성)
+- **출력_경로**: 결과물을 저장할 디렉토리 (선택사항, 생략시 입력 디렉토리가 위치한 디렉토리에 새 폴더 생성)
+
+### 사용 예시
+
+1. **직접 명령어 입력**
    ```bash
-   aiexeauto "<프롬프트|프롬프트를담은파일경로>" <데이터소스경로> <데이터출력경로>
+   # 중복 파일 제거
+   aiexeauto "이 폴더에서 중복된 파일들을 찾아서 하나만 남기고 삭제해줘" ./data ./output
+   
+   # 이미지 처리
+   aiexeauto "모든 JPG 파일을 PNG로 변환하고 사이즈를 절반으로 줄여줘" ./images ./processed
+   
+   # 데이터 분석
+   aiexeauto "CSV 파일들을 분석해서 월별 매출 통계를 차트로 만들어줘" ./sales ./report
    ```
 
-2. **실행 옵션 상세 설명**
-   - **프롬프트**: 실행할 작업을 자연어로 설명하거나 프롬프트가 담긴 텍스트 파일 경로 (필수)
-   - **데이터소스경로**: 입력 데이터가 있는 디렉터리 경로 (선택사항: 빈칸으로 두면 현재 디렉터리에 소스 폴더를 생성함)
-   - **데이터출력경로**: 결과물이 저장될 디렉터리 경로 (선택사항: 빈칸으로 두면 현재 디렉터리에 출력 폴더를 생성함)
-
-3. **프롬프트 텍스트 사용**
+2. **텍스트 파일로 명령어 입력**
    ```bash
-   aiexeauto "폴더 안에 담긴 중복 파일을 모두 찾아서 고유한 파일 하나 남기고 다 지워줘." ./data ./data-output
+   # task.txt 파일에 작업 설명을 작성
+   aiexeauto "task.txt" ./data ./output
    ```
 
-4. **프롬프트 파일 사용**
-   ```bash
-   aiexeauto "task1.txt" ./data ./data-output
-   ```
+### 작업 설명 작성 팁
 
-5. **주의사항**
-   - 본 프로젝트는 시험적인 프로토타입 버전입니다. 이용에 주의 부탁드립니다.
-   - AI는 실수를 할 수도 있습니다. 실수로 인한 손해에 주의해주세요.
-   - 입력 데이터는 반드시 디렉터리 형태로 제공합니다.
-   - 설정에 따라 출력 디렉터리는 기존 디렉터리를 덮어쓸 수 있으니 유의해주세요.
+- **구체적으로 작성**: 원하는 결과를 명확하게 설명
+- **단계별 작성**: 복잡한 작업은 여러 단계로 나누어 설명
+- **조건 명시**: 특별한 조건이나 제약사항이 있다면 명확히 기술
 
-6. **면책 조항**
-   - 사용자는 aiexeauto 사용에 대한 전적인 책임을 집니다.
+## 주의사항
+
+1. **데이터 백업**
+   - 중요한 데이터는 반드시 백업 후 사용
+   - 실수로 인한 데이터 손실 가능성 있음
+
+2. **리소스 사용**
+   - 대용량 파일 처리 시 충분한 시스템 리소스 확보 필요
+   - 네트워크 연결 상태 확인 필요
+
+3. **보안**
+   - API 키는 안전하게 관리
+   - 민감한 데이터 처리 시 주의
+
+4. **비용**
+   - Claude API 사용에 따른 비용 발생
+   - [Claude 요금제 확인](https://www.anthropic.com/pricing#anthropic-api)
+
+## 문제 해결
+
+1. **일반적인 오류**
+   - API 키 오류: API 키가 올바르게 설정되었는지 확인
+   - 경로 오류: 입/출력 경로가 올바른지 확인
+   - 권한 오류: 필요한 디렉토리 접근 권한 확인
+
+2. **Docker 관련 오류** (macOS)
+   - Docker Desktop 실행 상태 확인
+   - 이미지 빌드 상태 확인
+   - 리소스 할당 상태 확인
+
+3. **도움 요청**
+   - 문제 해결이 어려운 경우 [코드깎는노인 클래스](https://cokac.com)에 방문하여 도움을 요청할 수 있습니다.
+   - 코드깎는노인이 친절하게 도와드립니다.
+
+## 라이선스
+
+MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
+
+## 기여하기
+
+버그 리포트, 기능 제안, 풀 리퀘스트 환영합니다.
+- GitHub 이슈 트래커 사용
+- 코드 기여 시 테스트 코드 포함
+
+## 면책 조항
+
+본 소프트웨어는 프로토타입 단계이며, 사용자는 모든 책임을 부담합니다. 중요한 데이터나 시스템에는 신중히 사용해주세요.
