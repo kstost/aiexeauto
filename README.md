@@ -100,7 +100,7 @@ aiexeauto config overwriteOutputDir false        # 출력 디렉토리 덮어쓰
      # Docker 이미지 빌드
      git clone https://github.com/kstost/aiexeauto.git
      cd aiexeauto/my-docker-app
-     docker build -t my-node-ubuntu .
+     docker build --platform linux/x86_64 -t my-node-ubuntu .
      ```
 
 ## 사용 방법
