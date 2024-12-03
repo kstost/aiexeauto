@@ -269,7 +269,7 @@ export async function killDockerContainer(containerId) {
     await executeCommand(`docker kill "${containerId}"`);
 }
 export async function runDockerContainerDemon(dockerImage) {
-    let result = await executeCommand(`docker run -d --rm "${dockerImage}" tail -f /dev/null`);
+    let result = await executeCommand(`docker run -d --rm --platform linux/x86_64 "${dockerImage}" tail -f /dev/null`);
     if (result.code !== 0) throw new Error('컨테이너 시작 실패');
     return result.stdout.trim();
 }
