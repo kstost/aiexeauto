@@ -56,6 +56,24 @@ export async function loadConfiguration() {
     }
     return config_;
 }
+export async function getToolList() {
+    const useDocker = await getConfiguration('useDocker');
+    const container = useDocker ? 'docker' : 'webcontainer';
+    const toolList = await fs.promises.readdir(getCodePath(`prompt_tools/${container}`));
+    return toolList.filter(tool => tool.endsWith('.toolspec.json')).map(tool => tool.replace(/\.toolspec\.json$/, ''));
+}
+export async function getToolData(toolName) {
+    const useDocker = await getConfiguration('useDocker');
+    const container = useDocker ? 'docker' : 'webcontainer';
+    const toolPrompt = getCodePath(`prompt_tools/${container}/${toolName}.md`);
+    const toolSpecPath = getCodePath(`prompt_tools/${container}/${toolName}.toolspec.json`);
+    const toolSpec = await fs.promises.readFile(toolSpecPath, 'utf8');
+    const prompt = await fs.promises.readFile(toolPrompt, 'utf8');
+    return {
+        prompt,
+        spec: JSON.parse(toolSpec)
+    };
+}
 export function getCodePath(itemPath) {
     return getAbsolutePath(path.join(__dirname, itemPath));
 }
@@ -93,7 +111,14 @@ export function getAbsolutePath(itemPath) {
     }
     return itemPath;
 }
-
+export async function flushFolder(folderList) {
+    for (const folder of folderList) {
+        try {
+            const files = await fs.promises.readdir(folder);
+            if (files.length === 0) await fs.promises.rmdir(folder);
+        } catch (error) { }
+    }
+}
 export function validatePath(path, pathType) {
     const invalidChars = isWindows() ? ['"', "'"] : ['"', "'", ' '];
     if (invalidChars.some(char => path.includes(char))) {
@@ -115,7 +140,7 @@ export function getOSPathSeparator() {
     return isWindows() ? '\\' : '/';
 }
 
-export async function prepareOutputDir(outputDir, overwrite) {
+export async function prepareOutputDir(outputDir, overwrite, doNotCreate = false) {
     // 끝의 모든 슬래시 제거
     let baseDir = outputDir;
     while (baseDir.endsWith('/') || baseDir.endsWith('\\')) {
@@ -132,11 +157,11 @@ export async function prepareOutputDir(outputDir, overwrite) {
         }
 
         // 디렉토리 생성
-        await fs.promises.mkdir(targetDir, { recursive: true });
+        if (!doNotCreate) await fs.promises.mkdir(targetDir, { recursive: true });
         return targetDir;
     } else {
         await fs.promises.rm(targetDir, { recursive: true, force: true });
-        await fs.promises.mkdir(targetDir, { recursive: true });
+        if (!doNotCreate) await fs.promises.mkdir(targetDir, { recursive: true });
         return targetDir;
     }
 }

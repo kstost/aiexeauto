@@ -3,8 +3,9 @@ import { promisify } from 'util';
 import fs from 'fs';
 import { spawn, spawnSync } from 'child_process';
 import { getAbsolutePath, getAppPath, isWindows, getConfiguration } from './system.js';
+import chalk from 'chalk';
 
-export async function executeInContainer(containerId, command) {
+export async function executeInContainer(containerId, command, streamGetter = null) {
     if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     if (command.includes('"')) {
         return {
@@ -15,7 +16,7 @@ export async function executeInContainer(containerId, command) {
             error: new Error('쌍따옴표는 허용되지 않습니다')
         };
     }
-    return await executeCommand('docker exec "' + containerId + '" /bin/sh -c "' + command + '"')
+    return await executeCommand('docker exec "' + containerId + '" /bin/sh -c "' + command + '"', streamGetter)
 }
 
 function parseCommandLine(cmdline) {
@@ -87,7 +88,7 @@ export function executeCommandSync(command, args = []) {
     };
 }
 
-export async function executeCommand(command, args = []) {
+export async function executeCommand(command, streamGetter = null) {
     const khongLog = true;
     if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     return new Promise((resolve, reject) => {
@@ -96,16 +97,23 @@ export async function executeCommand(command, args = []) {
             stdio: ['pipe', 'pipe', 'pipe'],
             shell: false
         });
-
         let stdout = '';
         let stderr = '';
         let output = '';
+        const broadCaster = (str, type) => {
+            if (!streamGetter) return;
+            if (streamGetter.constructor !== Function) return;
+            str = chalk.hex('#aaaaaa')(str);
+            if (type === 'stderr') str = chalk.hex('#ff7700')(str);
+            streamGetter(str);
+        }
 
         child.stdout.on('data', (data) => {
             if (!khongLog) console.log('execution_stdout', data.toString());
             const str = data.toString();
             stdout += str;
             output += str;
+            broadCaster(str, 'stdout');
         });
 
         child.stderr.on('data', (data) => {
@@ -113,6 +121,7 @@ export async function executeCommand(command, args = []) {
             const str = data.toString();
             stderr += str;
             output += str;
+            broadCaster(str, 'stderr');
         });
 
         child.on('error', (error) => {
@@ -211,7 +220,7 @@ export async function installPythonModules(containerId, workDir, moduleName) {
         return true;
     }
 }
-export async function runPythonCode(containerId, workDir, code, requiredPackageNames = []) {
+export async function runPythonCode(containerId, workDir, code, requiredPackageNames = [], streamGetter = null) {
     for (const packageName of requiredPackageNames) await installPythonModules(containerId, workDir, packageName);
     const tmpPyFile = getAppPath('.code_' + Math.random() + '.py');
     const pyFileName = 'AIEXE-data-handling-operation.py';
@@ -233,12 +242,12 @@ export async function runPythonCode(containerId, workDir, code, requiredPackageN
     await fs.promises.rm(tmpPyFile);
 
 
-    let result = await executeInContainer(containerId, 'cd ' + workDir + ' && python ' + pyFileName);
+    let result = await executeInContainer(containerId, 'cd ' + workDir + ' && python -u ' + pyFileName, streamGetter);
     result.output = `${result.stderr}\n\n${result.stdout}`;
     return result;
 
 }
-export async function runNodeJSCode(containerId, workDir, code, requiredPackageNames = []) {
+export async function runNodeJSCode(containerId, workDir, code, requiredPackageNames = [], streamGetter = null) {
     for (const packageName of requiredPackageNames) await installNodeModules(containerId, workDir, packageName);
     const tmpJsFile = getAppPath('.code_' + Math.random() + '.js');
     const jsFileName = 'AIEXE-data-handling-operation.js';
@@ -261,7 +270,7 @@ export async function runNodeJSCode(containerId, workDir, code, requiredPackageN
     await fs.promises.rm(tmpJsFile);
 
 
-    let result = await executeInContainer(containerId, 'cd ' + workDir + ' && node ' + jsFileName);
+    let result = await executeInContainer(containerId, 'cd ' + workDir + ' && node ' + jsFileName, streamGetter);
     result.output = `${result.stderr}\n\n${result.stdout}`;
     return result;
 }

@@ -3,7 +3,7 @@
 
 import express from 'express';
 import { solveLogic } from './solveLogic.js';
-import { getCodePath, findAvailablePort, getAbsolutePath, validatePath, prepareOutputDir, getAppPath, getConfiguration, setConfiguration } from './system.js';
+import { getCodePath, findAvailablePort, getAbsolutePath, validatePath, prepareOutputDir, getAppPath, getConfiguration, setConfiguration, flushFolder } from './system.js';
 import { validateAndCreatePaths } from './dataHandler.js';
 import fs from 'fs';
 import boxen from 'boxen';
@@ -25,7 +25,7 @@ const startPort = process.env.PORT || 8080;
 let server;
 let prompt = process.argv[2];
 if (prompt === 'version') {
-    console.log('1.0.19');
+    console.log('1.0.20');
     process.exit(0);
 } else if (prompt === 'config') {
     let configKey = process.argv[3];
@@ -42,13 +42,17 @@ if (prompt === 'version') {
     }
     let dataSourcePath = getAbsolutePath(process.argv[3]);
     let dataOutputPath = getAbsolutePath(process.argv[4]);
-    if (!dataSourcePath) dataSourcePath = await prepareOutputDir(path.join(process.cwd(), 'data'), false);
-    if (!dataOutputPath) {
-        dataOutputPath = await prepareOutputDir(dataSourcePath, false);
-        await fs.promises.rm(dataOutputPath, { recursive: true });
+    let dataSourceNotAssigned = !dataSourcePath;
+    let dataOutputNotAssigned = !dataOutputPath;
+    let odrPath = dataOutputPath;
+    if (dataSourceNotAssigned) {
+        dataSourcePath = await prepareOutputDir(path.join(getAppPath('.tempwork'), 'data'), false);
     }
+    dataOutputPath = await prepareOutputDir(path.join(getAppPath('.tempwork'), 'output'), false);
+
     validatePath(dataSourcePath, '데이터 소스 경로');
     validatePath(dataOutputPath, '데이터 출력 경로');
+    if (odrPath) validatePath(odrPath, '데이터 출력 경로');
     (async () => {
         const dockerWorkDir = await getConfiguration('dockerWorkDir');
         const llm = await getConfiguration('llm');
@@ -64,13 +68,15 @@ if (prompt === 'version') {
             prompt = prompt.split('\n').filter(line => line.trim() !== '').join(' ');
         }
 
-        try {
-            await validateAndCreatePaths(dataSourcePath);
-            dataOutputPath = await prepareOutputDir(dataOutputPath, overwriteOutputDir);
-        } catch (error) {
-            console.error(error.message);
-            process.exit(1);
+        try { await validateAndCreatePaths(dataSourcePath); } catch (error) { console.error(error.message); process.exit(1); }
+        const nodeFiles = ['package.json', 'package-lock.json', 'node_modules'];
+        for (const file of nodeFiles) {
+            if (fs.existsSync(path.join(dataSourcePath, file))) {
+                console.log(chalk.red(`데이터 소스 경로에 Node.js 관련 파일(${file})이 포함되어 있습니다.`));
+                process.exit(1);
+            }
         }
+        try { await validateAndCreatePaths(dataOutputPath); } catch (error) { console.error(error.message); process.exit(1); }
 
         try {
             const PORT = await findAvailablePort(startPort);
@@ -82,7 +88,28 @@ if (prompt === 'version') {
                 title: '수행 미션',
                 titleAlignment: 'center'
             }));
-            server = app.listen(PORT, async () => await solveLogic({ PORT, server, multiLineMission: prompt, dataSourcePath, dataOutputPath }));
+            server = app.listen(PORT, async () => {
+                await solveLogic({ PORT, server, multiLineMission: prompt, dataSourcePath, dataOutputPath });
+                if (dataSourceNotAssigned) await flushFolder([dataSourcePath]);
+                if (dataOutputNotAssigned) await flushFolder([dataOutputPath]);
+                if (fs.existsSync(dataOutputPath)) {
+                    let outputCandidate;
+                    let over = false;
+                    if (odrPath) {
+                        outputCandidate = odrPath
+                        over = overwriteOutputDir;
+                    } else {
+                        if (dataSourceNotAssigned) {
+                            outputCandidate = path.join(process.cwd(), 'output')
+                        } else {
+                            outputCandidate = dataSourcePath
+                        }
+                    }
+                    let outputPath = await prepareOutputDir(outputCandidate, over, true);
+                    await fs.promises.rename(dataOutputPath, outputPath);
+                    console.log(chalk.green(`결과물이 저장된 경로: ${chalk.bold(outputPath)}`));
+                }
+            });
         } catch (err) {
             console.error('Error while setting up port:', err);
             process.exit(1);

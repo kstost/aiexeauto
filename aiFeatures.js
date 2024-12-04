@@ -1,4 +1,4 @@
-import { getAppPath, convertJsonToResponseFormat, getConfiguration } from './system.js';
+import { getAppPath, convertJsonToResponseFormat, getConfiguration, getToolList, getToolData } from './system.js';
 import fs from 'fs';
 
 async function leaveLog({ callMode, data }) {
@@ -109,16 +109,16 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                         "description": "Run a shell command.",
                         "input_schema": convertJsonToResponseFormat({ command: "" }, { command: "shell command to run, e.g, ls -al" }).json_schema.schema
                     } : null,
-                    {
-                        "name": "generate_nodejs_code",
-                        "description": "generate nodejs code.",
-                        "input_schema": convertJsonToResponseFormat({ nodejs_code: "", npm_package_list: [""] }, { nodejs_code: "nodejs code for the only one task", npm_package_list: "array of npm package names used in the code" }).json_schema.schema
-                    },
-                    useDocker ? {
-                        "name": "generate_python_code",
-                        "description": "generate python code.",
-                        "input_schema": convertJsonToResponseFormat({ python_code: "", pip_package_list: [""] }, { python_code: "python code for the only one task", pip_package_list: "array of pip package names used in the code" }).json_schema.schema
-                    } : null,
+                    ...(await (async () => {
+                        const toolList = await getToolList();
+                        let toolPrompts = [];
+                        for (let tool of toolList) {
+                            const toolData = await getToolData(tool);
+                            toolData.spec.input_schema = convertJsonToResponseFormat(...toolData.spec.input_schema).json_schema.schema;
+                            toolPrompts.push(toolData.spec);
+                        }
+                        return toolPrompts;
+                    })())
                 ].filter(t => t !== null),
             }
             let tools = toolsList[callMode];

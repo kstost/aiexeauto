@@ -12,6 +12,7 @@ import { chatCompletion } from './aiFeatures.js';
 import { isInstalledNpmPackage, installNpmPackage, checkValidSyntaxJavascript, stripFencedCodeBlocks, runCode, getRequiredPackageNames } from './codeExecution.js';
 import { getLastDirectoryName } from './dataHandler.js';
 import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, isInstalledNodeModule, installNodeModules, runNodeJSCode, runPythonCode, doesDockerImageExist, isInstalledPythonModule, installPythonModules } from './docker.js';
+import { getToolList, getToolData } from './system.js';
 import fs from 'fs';
 import { getConfiguration } from './system.js';
 
@@ -20,7 +21,7 @@ let spinners = {};
 
 // Collecting prompts in one place
 const prompts = {
-    systemPrompt: (mission, whattodo, useDocker) => [
+    systemPrompt: async (mission, whattodo, useDocker) => [
         '컴퓨터 작업 실행 에이전트로서, MAIN MISSION을 완수하기 위한 SUB MISSION을 수행하기 위해 필요한 작업을 수행합니다.',
         '',
         `- MAIN MISSION: "${mission}"`,
@@ -80,42 +81,16 @@ const prompts = {
         true ? '      #### INSTRUCTION' : '[REMOVE]',
         true ? '      - 실행할 쉘 명령어를 제공해주세요' : '[REMOVE]',
         true ? '   ' : '[REMOVE]',
-        '',
-        '   ### generate_nodejs_code',
-        '   - NodeJS 코드를 생성하여 작업을 수행합니다.',
-        '      #### INSTRUCTION',
-        '      - **단 한가지 일**만 수행.',
-        '      - 앞선 과정에서 수행한 일은 반복하지 말아.',
-        '      - 코드는 단일 JavaScript 파일로 완전하고 실행 가능해야 합니다.',
-        '      - 진행 단계마다 `console.log`를 사용하여 상태값과 진행상황을 출력하세요.',
-        '      - 테이블로 출력할 때에는 `console.table`을 사용하세요.',
-        '      - 작업을 수행하는 에이전트를 위해 근거가 되는 모든 결과를 출력하세요.',
-        '      - 작업 성공여부를 판단하기 위한 근거를 모든 코드 수행 라인마다 출력하세요.',
-        // '      - 시각화 처리가 필요한 경우는 cdnjs_finder 도구를 사용하여 적절한 시각화 도구의 cdnjs URL을 검색후 html,css,js 웹페이지형태로 시각화 결과물을 생성하세요.',
-        '      - 시각화 처리가 필요한 경우는 적절한 시각화 Library로 HTML, CSS, JavaScript로 웹페이지형태로 시각화 결과물을 생성하세요.',
-        '      - 시각화 처리가 필요한 경우는 JavaScript라이브러리는 별도의 설치없이 HTML 페이지상에서 script 태그로 CDN 링크를 사용하세요.',
-        '      - 이미지 처리가 필요한 경우는 npm의 sharp 라이브러리를 사용하세요.',
-        '      - 쉘 명령어를 실행할 때는 child_process의 spawnSync를 사용하세요.',
-        '      - 코드의 수행 후 반드시 프로세스가 종료되어야한다.',
-        '      - 서버를 띄우는 작동은 절대로 수행하지 마세요.',
-        '      - 선택적인 작업은 생략합니다.',
         '   ',
-        '',
-        useDocker ? '   ### generate_python_code' : '[REMOVE]',
-        useDocker ? '   - Python 코드를 생성하여 작업을 수행합니다.' : '[REMOVE]',
-        useDocker ? '      #### INSTRUCTION' : '[REMOVE]',
-        useDocker ? '      - **단 한가지 일**만 수행.' : '[REMOVE]',
-        useDocker ? '      - 앞선 과정에서 수행한 일은 반복하지 말아.' : '[REMOVE]',
-        useDocker ? '      - 코드는 단일 Python 파일로 완전하고 실행 가능해야 합니다.' : '[REMOVE]',
-        useDocker ? '      - 진행 단계마다 `print`를 사용하여 상태값과 진행상황을 출력하세요.' : '[REMOVE]',
-        useDocker ? '      - 작업을 수행하는 에이전트를 위해 근거가 되는 모든 결과를 출력하세요.' : '[REMOVE]',
-        useDocker ? '      - 작업 성공여부를 판단하기 위한 근거를 모든 코드 수행 라인마다 출력하세요.' : '[REMOVE]',
-        useDocker ? '      - 쉘 명령어를 실행할 때는 subprocess를 사용하세요.' : '[REMOVE]',
-        useDocker ? '      - 코드의 수행 후 반드시 프로세스가 종료되어야한다.' : '[REMOVE]',
-        useDocker ? '      - 서버를 띄우는 작동은 절대로 수행하지 마세요.' : '[REMOVE]',
-        useDocker ? '      - 선택적인 작업은 생략합니다.' : '[REMOVE]',
-        '   ',
-        '',
+        `${await (async () => {
+            const toolList = await getToolList();
+            let toolPrompts = [];
+            for (let tool of toolList) {
+                const toolData = await getToolData(tool);
+                toolPrompts.push(toolData.prompt);
+            }
+            return toolPrompts.join('\n\t\n');
+        })()}`,
     ].filter(line => line.trim() !== '[REMOVE]').join('\n'),
     systemEvaluationPrompt: (mission) => [
         '컴퓨터 작업 실행 에이전트로서, MISSION이 완전하게 완료되었는지 엄격고 논리적으로 검증하고 평가하기 위해 필요한 작업을 수행합니다.',
@@ -360,12 +335,10 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             let javascriptCode = '';
             let javascriptCodeBack = '';
             let pythonCode = '';
-            let pythonCodeBack = '';
             let requiredPackageNames;
             let whatdidwedo = '';
             let whattodo = '';
             let validationMode = nextCodeForValidation ? true : false;
-            let skipNpmInstall = true;
 
             if (!validationMode) {
                 processTransactions.length === 0 && processTransactions.push({ class: 'output', data: null });
@@ -391,7 +364,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 console.log(chalk.bold.yellowBright(`📌${whattodo}`));
                 spinners.iter = createSpinner('AI가 코드를 생성하는 중...');
                 let actData = await chatCompletion(
-                    prompts.systemPrompt(multiLineMission, whattodo, useDocker),
+                    await prompts.systemPrompt(multiLineMission, whattodo, useDocker),
                     makeRealTransaction(multiLineMission, 'coding', whatdidwedo, whattodo, evaluationText),
                     'generateCode'
                 );
@@ -399,11 +372,12 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 if (actData.name === 'generate_nodejs_code') {
                     javascriptCode = actData.input.nodejs_code;
                     requiredPackageNames = actData.input.npm_package_list;
-                    skipNpmInstall = false;
+                } else if (actData.name === 'generate_nodejs_code_for_puppeteer') {
+                    javascriptCode = actData.input.nodejs_code;
+                    requiredPackageNames = actData.input.npm_package_list;
                 } else if (actData.name === 'generate_python_code') {
                     pythonCode = actData.input.python_code;
                     requiredPackageNames = actData.input.pip_package_list;
-                    // skipNpmInstall = false;
                 } else if (actData.name === 'list_directory') {
                     javascriptCode = [
                         `const listDirectory = require('listDirectory');`,
@@ -591,8 +565,6 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 nextCodeForValidation = null;
             }
             javascriptCode = stripFencedCodeBlocks(javascriptCode);
-            if (false) requiredPackageNames = null;
-            if (false) if (!skipNpmInstall) requiredPackageNames = await getRequiredPackageNames(javascriptCode, prompts);
             if (!requiredPackageNames) requiredPackageNames = [];
             if (requiredPackageNames && requiredPackageNames.constructor === Array) {
                 for (const packageName of requiredPackageNames) {
@@ -620,23 +592,25 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 }
             }
             requiredPackageNames = [];
-            spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
+            if (!useDocker) spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
             let result;
             {
+                const streamGetter = (str) => useDocker && process.stdout.write(str);
                 if (!pythonCode && javascriptCode) {
                     let javascriptCodeToRun = javascriptCodeBack ? javascriptCodeBack : javascriptCode;
                     if (useDocker) {
-                        result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCodeToRun, requiredPackageNames);
+                        result = await runNodeJSCode(containerId, dockerWorkDir, javascriptCodeToRun, requiredPackageNames, streamGetter);
                     } else {
                         result = await runCode(page, javascriptCodeToRun, requiredPackageNames);
                     }
                 } else if (!javascriptCode && pythonCode) {
                     if (useDocker) {
-                        result = await runPythonCode(containerId, dockerWorkDir, pythonCode, requiredPackageNames);
+                        result = await runPythonCode(containerId, dockerWorkDir, pythonCode, requiredPackageNames, streamGetter);
                     }
                 }
             }
 
+            if (useDocker) spinners.iter = createSpinner(`실행 #${iterationCount}차 완료`);
             if (spinners.iter) spinners.iter.succeed(`실행 #${iterationCount}차 완료`);
             processTransactions.push({ class: 'code', data: javascriptCode });
 
@@ -646,10 +620,15 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
 
 
             // 실행 결과를 boxen으로 감싸기
-            const outputPreview = omitMiddlePart(result.output);
+            if (!useDocker) {
+                const outputPreview = omitMiddlePart(result.output);
 
-            console.log(chalk.bold.yellowBright(outputPreview));
-            console.log('');
+                console.log(chalk.bold.yellowBright(outputPreview));
+                console.log('');
+            }
+            if (result.output.trim().length === 0) {
+                console.log(chalk.red('❌ 실행결과 출력된 내용이 존재하지 않습니다'));
+            }
 
             processTransactions.push({ class: 'output', data: result.output });
 
@@ -692,7 +671,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
         server.close();
         if (spinners.cleanup) {
             spinners.cleanup.succeed('모든 작업이 완료되었습니다.');
-            console.log(chalk.green(`결과물이 저장된 경로: ${chalk.bold(dataOutputPath)}`));
+            // console.log(chalk.green(`결과물이 저장된 경로: ${chalk.bold(dataOutputPath)}`));
         }
     } catch (err) {
         // 현재 실행 중인 모든 스피너 중지
