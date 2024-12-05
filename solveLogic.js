@@ -434,8 +434,8 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                         `const output = result.stderr.toString() + result.stdout.toString();`,
                         `const outputExists = output.trim().length>0;`,
                         `const notFound = '(❌ ${actData.input.command} 명령어가 존재하지 않습니다)';`,
-                        `if (result.status === 0) console.log(outputExists?output:notFound);`,
-                        `if (result.status !== 0) console.error('❌ 명령어 실행 실패'+(outputExists?String.fromCharCode(10)+output:''));`,
+                        `if (result.status === 0) console.log(outputExists?'${actData.input.command} 명령어가 존재합니다.'+String.fromCharCode(10)+'명령어의 경로: '+output:notFound);`,
+                        `if (result.status !== 0) console.error('❌ which 명령어 실행 실패'+(outputExists?String.fromCharCode(10)+output:''));`,
                         `process.exit(result.status);`,
                     ].join('\n');
                 } else if (actData.name === 'run_command') {
@@ -449,7 +449,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                         `const output = result.stderr.toString() + result.stdout.toString();`,
                         `const outputExists = output.trim().length>0;`,
                         `if (result.status === 0) console.log(outputExists?output:'(출력결과는 없지만 문제없이 실행되었습니다)');`,
-                        `if (result.status !== 0) console.error('❌ 명령어 실행 실패'+(outputExists?String.fromCharCode(10)+output:''));`,
+                        `if (result.status !== 0) console.error(output);`,
                         `process.exit(result.status);`,
                     ].join('\n');
                 } else if (actData.name === 'read_file') {
