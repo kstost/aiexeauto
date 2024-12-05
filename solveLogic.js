@@ -164,17 +164,24 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             let output = processTransactions[i].class === 'output' ? processTransactions[i].data : null;
             if (output) {
                 output = omitMiddlePart(output);
+                output = output.trim();
             }
 
             let data = {
                 role,
-                content: (role === 'user' ? [
+                content: (role === 'user' ? (output ? [
                     'Output of the Execution',
                     '```shell',
                     `$ node code.js`,
                     output,
                     '```',
                 ] : [
+                    'No output. The execution completed without any output.',
+                    '```shell',
+                    `$ node code.js`,
+                    `$`,
+                    '```',
+                ]) : [
                     'Code to execute',
                     '```javascript',
                     code,
@@ -386,11 +393,11 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const fs = require('fs');`,
                         `const exists = fs.existsSync('${actData.input.directory_path}');`,
-                        `if(!exists){console.log('❌ ${actData.input.directory_path} 조회할 디렉토리가 존재하지 않습니다');process.exit(0);}`,
+                        `if(!exists){console.error('❌ ${actData.input.directory_path} 조회할 디렉토리가 존재하지 않습니다');process.exit(1);}`,
                         `let result = fs.readdirSync('${actData.input.directory_path}');`,
                         `result = result.filter(item => !['node_modules', 'package.json', 'package-lock.json'].includes(item));`,
                         `console.log('## Directory Contents of ${actData.input.directory_path}');`,
-                        `if(result.length === 0){console.log('❌ 디렉토리가 비어있습니다');process.exit(0);}`,
+                        `if(result.length === 0){console.log('⚠️ 디렉토리가 비어있습니다');process.exit(0);}`,
                         `// 폴더 먼저 출력`,
                         `for(let item of result) {`,
                         `    const isDirectory = fs.statSync('${actData.input.directory_path}/'+item).isDirectory();`,
@@ -410,8 +417,11 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const { spawnSync } = require('child_process');`,
                         `const result = spawnSync('apt', ['install', '-y', '${actData.input.package_name}'], { stdio: ['pipe', 'pipe', 'pipe'], shell: true, encoding: 'utf-8' });`,
-                        `console.log(result.stdout.toString());`,
-                        `console.log(result.stderr.toString());`,
+                        `const output = result.stderr.toString() + result.stdout.toString();`,
+                        `const outputExists = output.trim().length>0;`,
+                        `if (result.status === 0) console.log(outputExists?output:'(출력결과는 없지만 문제없이 설치되었습니다)');`,
+                        `if (result.status !== 0) console.error('❌ 설치수행 실행 실패'+(outputExists?String.fromCharCode(10)+output:''));`,
+                        `process.exit(result.status);`,
                     ].join('\n');
                 } else if (actData.name === 'which_command') {
                     javascriptCode = [
@@ -421,7 +431,12 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const { spawnSync } = require('child_process');`,
                         `const result = spawnSync('which', ['${actData.input.command}'], { stdio: ['pipe', 'pipe', 'pipe'], shell: true, encoding: 'utf-8' });`,
-                        `console.log((result.stderr.toString()+result.stdout.toString()).trim().length===0?'(❌ ${actData.input.command} 명령어가 존재하지 않습니다)':result.stdout.toString());`,
+                        `const output = result.stderr.toString() + result.stdout.toString();`,
+                        `const outputExists = output.trim().length>0;`,
+                        `const notFound = '(❌ ${actData.input.command} 명령어가 존재하지 않습니다)';`,
+                        `if (result.status === 0) console.log(outputExists?output:notFound);`,
+                        `if (result.status !== 0) console.error('❌ 명령어 실행 실패'+(outputExists?String.fromCharCode(10)+output:''));`,
+                        `process.exit(result.status);`,
                     ].join('\n');
                 } else if (actData.name === 'run_command') {
                     javascriptCode = [
@@ -431,9 +446,11 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const { spawnSync } = require('child_process');`,
                         `const result = spawnSync('${actData.input.command}', [], { stdio: ['pipe', 'pipe', 'pipe'], shell: true, encoding: 'utf-8' });`,
-                        `console.log(result.stdout.toString());`,
-                        `console.log(result.stderr.toString());`,
-                        `console.log((result.stderr.toString()+result.stdout.toString()).trim().length===0?'(❌ 실행결과 출력된 내용이 존재하지 않습니다)':'');`,
+                        `const output = result.stderr.toString() + result.stdout.toString();`,
+                        `const outputExists = output.trim().length>0;`,
+                        `if (result.status === 0) console.log(outputExists?output:'(출력결과는 없지만 문제없이 실행되었습니다)');`,
+                        `if (result.status !== 0) console.error('❌ 명령어 실행 실패'+(outputExists?String.fromCharCode(10)+output:''));`,
+                        `process.exit(result.status);`,
                     ].join('\n');
                 } else if (actData.name === 'read_file') {
                     javascriptCode = [
@@ -443,11 +460,11 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const fs = require('fs');`,
                         `const exists = fs.existsSync('${actData.input.file_path}');`,
-                        `if(!exists){console.log('❌ ${actData.input.file_path} 읽을 파일이 존재하지 않습니다');process.exit(0);}`,
+                        `if(!exists){console.error('❌ ${actData.input.file_path} 읽을 파일이 존재하지 않습니다');process.exit(1);}`,
                         `const result = fs.readFileSync('${actData.input.file_path}', 'utf8');`,
                         `const trimmed = result.trim();`,
                         `if (trimmed.length === 0||fs.statSync('${actData.input.file_path}').size === 0) {`,
-                        `    console.log('❌ ${actData.input.file_path} 파일이 비어있습니다 (0 bytes)');`,
+                        `    console.log('⚠️ ${actData.input.file_path} 파일이 비어있습니다 (0 bytes)');`,
                         `    process.exit(0);`,
                         `}`,
                         `console.log('📄 Contents of ${actData.input.file_path}');`,
@@ -461,11 +478,12 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const fs = require('fs');`,
                         `const exists = fs.existsSync('${actData.input.file_path}');`,
-                        `if(!exists){console.log('❌ ${actData.input.file_path} 삭제할 파일이 존재하지 않습니다');process.exit(0);}`,
+                        `if(!exists){console.error('❌ ${actData.input.file_path} 삭제할 파일이 존재하지 않습니다');process.exit(1);}`,
                         `fs.unlinkSync('${actData.input.file_path}');`,
                         `const result = fs.existsSync('${actData.input.file_path}');`,
                         `if (result) {`,
-                        `    console.log('❌ 파일이 여전히 존재합니다: ${actData.input.file_path}');`,
+                        `    console.error('❌ 파일이 여전히 존재합니다: ${actData.input.file_path}');`,
+                        `    process.exit(1);`,
                         `} else {`,
                         `    console.log('✅ 파일이 성공적으로 삭제되었습니다');`,
                         `}`,
@@ -478,11 +496,12 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const fs = require('fs');`,
                         `const exists = fs.existsSync('${actData.input.directory_path}');`,
-                        `if(!exists){console.log('❌ ${actData.input.directory_path} 삭제할 디렉토리가 존재하지 않습니다');process.exit(0);}`,
+                        `if(!exists){console.error('❌ ${actData.input.directory_path} 삭제할 디렉토리가 존재하지 않습니다');process.exit(1);}`,
                         `fs.rmSync('${actData.input.directory_path}', { recursive: true, force: true });`,
                         `const result = fs.existsSync('${actData.input.directory_path}');`,
                         `if (result) {`,
-                        `    console.log('❌ 디렉토리가 여전히 존재합니다: ${actData.input.directory_path}');`,
+                        `    console.error('❌ 디렉토리가 여전히 존재합니다: ${actData.input.directory_path}');`,
+                        `    process.exit(1);`,
                         `} else {`,
                         `    console.log('✅ 디렉토리가 성공적으로 삭제되었습니다');`,
                         `}`,
@@ -495,13 +514,14 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     javascriptCodeBack = [
                         `const fs = require('fs');`,
                         `const exists = fs.existsSync('${actData.input.old_path}');`,
-                        `if(!exists){console.log('❌ ${actData.input.old_path} 이름을 변경할 파일 또는 디렉토리가 존재하지 않습니다');process.exit(0);}`,
+                        `if(!exists){console.error('❌ ${actData.input.old_path} 이름을 변경할 파일 또는 디렉토리가 존재하지 않습니다');process.exit(1);}`,
                         `fs.renameSync('${actData.input.old_path}', '${actData.input.new_path}');`,
                         `const result = fs.existsSync('${actData.input.new_path}');`,
                         `if (result) {`,
                         `    console.log('✅ 파일 또는 디렉토리가 성공적으로 이름이 변경되었습니다');`,
                         `} else {`,
-                        `    console.log('❌ 파일 또는 디렉토리가 이름 변경에 실패했습니다');`,
+                        `    console.error('❌ 파일 또는 디렉토리가 이름 변경에 실패했습니다');`,
+                        `    process.exit(1);`,
                         `}`,
                     ].join('\n');
                 } else if (actData.name === 'read_url') {
@@ -593,6 +613,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             }
             requiredPackageNames = [];
             if (!useDocker) spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
+            if (useDocker) console.log('📊 코드를 실행합니다');
             let result;
             {
                 const streamGetter = (str) => useDocker && process.stdout.write(str);

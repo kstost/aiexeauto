@@ -103,8 +103,10 @@ export async function executeCommand(command, streamGetter = null) {
         const broadCaster = (str, type) => {
             if (!streamGetter) return;
             if (streamGetter.constructor !== Function) return;
-            str = chalk.hex('#aaaaaa')(str);
+            // if (type === 'stdout') str = chalk.hex('#aaaaaa')(str);
+            if (type === 'stdout') str = chalk.hex('#c4ff78')(str);
             if (type === 'stderr') str = chalk.hex('#ff7700')(str);
+            // console.log('tpaaa', type, str);
             streamGetter(str);
         }
 
