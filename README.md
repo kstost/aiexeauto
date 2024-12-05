@@ -66,7 +66,7 @@ aiexeauto config claudeApiKey "sk-ant-api..."    # Claude API 키 설정
 # AI 모델 설정
 aiexeauto config model "claude-3-5-haiku-20241022"  # 빠르고 경제적
 # 또는
-aiexeauto config model "claude-3-5-sonnet-20240229" # 더 정교한 작업 수행
+aiexeauto config model "claude-3-5-sonnet-20241022" # 더 정교한 작업 수행
 
 # 실행 환경 설정
 aiexeauto config maxIterations 0                 # 반복 횟수 (0=무제한)
