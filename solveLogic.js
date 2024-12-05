@@ -95,6 +95,7 @@ const prompts = {
     systemEvaluationPrompt: (mission) => [
         '컴퓨터 작업 실행 에이전트로서, MISSION이 완전하게 완료되었는지 엄격고 논리적으로 검증하고 평가하기 위해 필요한 작업을 수행합니다.',
         '이미 검증을 위한 충분한 OUTPUT이 존재하고 미션이 완수되었다고 판단되면 ENDOFMISSION을 응답하고 그것이 아니라면 NOTSOLVED를 응답.',
+        '만약 해결할 수 없는 미션이라면 GIVEUPTHEMISSION을 응답하세요.',
         '',
         `- MISSION: "${mission}"`,
         '',
@@ -205,13 +206,19 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
 
         const last = (
             processTransactions.at(-1).data !== null ?
-                [
+                (output ? [
                     'Output of the Execution',
-                    '```',
+                    '```shell',
+                    `$ node code.js`,
                     output,
                     '```',
-                    '',
-                ] : []
+                ] : [
+                    'Process ends without any outputs.',
+                    '```shell',
+                    `$ node code.js`,
+                    `$`,
+                    '```',
+                ]) : []
         );
         if (type === 'coding') {
             return {
@@ -238,7 +245,9 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 content: [
                     ...last,
                     '',
-                    'Judge what to do in both of verdict or generate_validation_code for the mission by Output of the Execution, We we did so far',
+                    'Does the progress so far and current output indicate mission completion?',
+                    'Judge what to do to complete the mission by the Output of the Execution and the history we did so far',
+                    // 'Judge what to do in among verdict or generate_validation_code or give_up_the_mission for the mission by Output of the Execution, We we did so far',
                     '',
                     `MISSION: "${mission}"`,
                     '',
@@ -375,7 +384,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     makeRealTransaction(multiLineMission, 'coding', whatdidwedo, whattodo, evaluationText),
                     'generateCode'
                 );
-                if (spinners.iter) spinners.iter.succeed('AI가 코드 생성을 완료했습니다');
+                if (spinners.iter) spinners.iter.succeed(`AI가 코드 생성을 완료(${actData.name})했습니다`);
                 if (actData.name === 'generate_nodejs_code') {
                     javascriptCode = actData.input.nodejs_code;
                     requiredPackageNames = actData.input.npm_package_list;
@@ -565,7 +574,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                         title: chalk.bold.cyan('Generated Code'),
                         titleAlignment: 'center',
                         padding: 1,
-                        margin: 1,
+                        margin: 0,
                         borderStyle: 'double',
                         borderColor: 'cyan'
                     }));
@@ -574,7 +583,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                         title: chalk.bold.cyan('Generated Code'),
                         titleAlignment: 'center',
                         padding: 1,
-                        margin: 1,
+                        margin: 0,
                         borderStyle: 'double',
                         borderColor: 'cyan'
                     }));
@@ -664,16 +673,21 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 if ((evaluation.replace(/[^A-Z]/g, '') || '').toUpperCase().trim() === 'ENDOFMISSION') {
                     if (spinners.iter) spinners.iter.succeed(`작업완료.`);
                     console.log(chalk.bold.greenBright(reason));
+                    console.log(chalk.bold.black.bgGreenBright('Mission Completed'));
+                    break;
+                } else if ((evaluation.replace(/[^A-Z]/g, '') || '').toUpperCase().trim() === 'GIVEUPTHEMISSION') {
+                    if (spinners.iter) spinners.iter.succeed(`작업 포기.`);
+                    console.log(chalk.bold.redBright(reason));
+                    console.log(chalk.bold.whiteBright.bgRedBright('Mission Aborted'));
                     break;
                 } else {
                     if (spinners.iter) spinners.iter.succeed(`검증완료`);
-                    console.log('📃 검증결과', chalk.bold.magentaBright(reason));
+                    console.log('📃 검증결과', chalk.gray(reason));
                     evaluationText = reason;
                 }
             }
         }
 
-        console.log('Mission solved');
 
         // 데이터 내보내기 스피너
         spinners.export = createSpinner('결과를 저장하는 중...');

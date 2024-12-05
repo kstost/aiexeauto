@@ -59,7 +59,7 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                         "description": "verdict whether the mission is solved.",
                         "input_schema": convertJsonToResponseFormat(
                             { evaluation: "", reason: "" },
-                            { evaluation: "Respond with the result based on whether the mission was successfully completed e.g, ENDOFMISSION or NOTSOLVED", reason: "Explain the reason for the verdict in korean of short length" }
+                            { evaluation: "Respond with the result based on whether the mission was successfully completed e.g, ENDOFMISSION or NOTSOLVED or GIVEUPTHEMISSION", reason: "Explain the reason for the verdict in korean of short length" }
                         ).json_schema.schema
                     },
                 ],
