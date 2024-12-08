@@ -12,7 +12,7 @@
 
 ## 데모 영상 보기
 
-YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 영상을 시청해보세요!  
+YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 영상을 시청해보세요!.  
 [여기](https://www.youtube.com/watch?v=GkOZ6fG99RI)를 클릭하여 영상을 시청할 수 있습니다.  
 [![비디오 라벨](http://img.youtube.com/vi/GkOZ6fG99RI/0.jpg)](https://www.youtube.com/watch?v=GkOZ6fG99RI)
 
