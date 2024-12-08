@@ -6,7 +6,6 @@ import { getAbsolutePath, getAppPath, isWindows, getConfiguration } from './syst
 import chalk from 'chalk';
 
 export async function executeInContainer(containerId, command, streamGetter = null) {
-    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     if (command.includes('"')) {
         return {
             output: '',
@@ -20,7 +19,6 @@ export async function executeInContainer(containerId, command, streamGetter = nu
 }
 
 function parseCommandLine(cmdline) {
-    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     let args = [];
     let currentArg = '';
     let inSingleQuote = false;
@@ -72,7 +70,6 @@ function parseCommandLine(cmdline) {
 }
 
 export function executeCommandSync(command, args = []) {
-    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
     const result = spawnSync(command, args, {
         stdio: ['pipe', 'pipe', 'pipe'],
         encoding: 'utf-8',
@@ -87,12 +84,17 @@ export function executeCommandSync(command, args = []) {
         error: result.error
     };
 }
-
+let runner;
 export async function executeCommand(command, streamGetter = null) {
     const khongLog = true;
-    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
+    if (!runner && isWindows()) runner = await wherePowershell();
     return new Promise((resolve, reject) => {
-        const result = parseCommandLine(command);
+        let result;
+        if (!isWindows()) result = parseCommandLine(command);
+        if (isWindows()) result = {
+            command: runner,
+            args: ['-Command', command]
+        }
         const child = spawn(result.command, result.args, {
             stdio: ['pipe', 'pipe', 'pipe'],
             shell: false
@@ -350,15 +352,29 @@ export async function doesDockerImageExist(imageName) {
 
 
 
-
+export async function wherePowershell() {
+    const execAsync = promisify(exec);
+    const commands = [
+        'Where.exe powershell',
+        'Where.exe powershell.exe',
+    ];
+    for (const command of commands) {
+        const result = await execAsync(command);
+        let picked = result?.stdout?.trim();
+        if (picked) return picked;
+    }
+    return 'powershell';
+}
 
 
 
 export async function getDockerInfo() {
-    if (isWindows()) throw new Error('Windows에서는 지원하지 않습니다.');
+    if (!runner && isWindows()) runner = await wherePowershell();
     try {
         const execAsync = promisify(exec);
-        const command = "docker info --format '{{json .}}' 2>/dev/null";
+        let command = "docker info --format '{{json .}}' 2>/dev/null";
+        if (isWindows()) command = "docker info --format '{{json .}}'";
+        if (isWindows()) command = `${runner} -Command "${command}"`;
         const { stdout } = await execAsync(command);
         if (!stdout) {
             throw new Error('도커 정보를 가져올 수 없습니다.');
