@@ -6,7 +6,7 @@
 
 - **자연어로 컴퓨터 제어**: "파일 정리해줘", "동영상 편집해줘"처럼 일상적인 말로 지시하면 AI가 알아서 실행
 - **복잡한 작업도 자동으로**: 파일 관리, 이미지 편집, 문서 작업 등 번거로운 컴퓨터 작업을 AI가 대신 처리
-- **Windows/Mac 모두 사용 가능**: 주요 운영체제를 모두 지원하며, Mac에서는 더 안전한 Docker 환경도 제공
+- **Windows/Mac 모두 사용 가능**: 주요 운영체제를 모두 지원
 - **작업 진행 상황 실시간 확인**: AI가 무엇을 하고 있는지 실시간으로 보여주는 깔끔한 화면 제공
 - **안전하고 믿을 수 있는 실행**: API 키는 안전하게 보관되며, 위험한 작업은 실행 전에 한 번 더 확인
 
@@ -22,14 +22,44 @@ YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 �
 - **운영체제**: 
   - Windows
   - macOS
-- **Docker** (선택사항, macOS 전용)
+- **Docker**
 
 ## 설치 방법
 
 1. **Node.js 설치**
    - [Node.js 공식 웹사이트](https://nodejs.org/)에서 최신 LTS 버전을 다운로드하여 설치
 
-2. **aiexeauto 설치**
+2. **Docker 설치**
+   - [Docker Desktop](https://www.docker.com/)에서 최신 버전을 다운로드하여 설치
+
+3. **Docker 이미지 빌드**
+
+   **macOS**의 경우:
+   ```bash
+   git clone https://github.com/kstost/aiexeauto.git
+   cd aiexeauto/my-docker-app
+   docker build --platform linux/x86_64 -t my-node-ubuntu .
+   ```
+
+   **Windows**의 경우 윈도우 검색창에서 "PowerShell"을 검색하여 관리자 권한으로 실행 후 아래 명령어를 실행합니다:
+   ```powershell
+   # 실행 정책 변경
+   Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+
+   # 디렉토리 생성
+   mkdir my-docker-app
+
+   # Dockerfile 다운로드
+   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/kstost/aiexeauto/refs/heads/main/my-docker-app/Dockerfile" -OutFile "my-docker-app/Dockerfile"
+
+   # 작업 디렉토리 이동
+   cd my-docker-app
+
+   # Docker 이미지 빌드
+   docker build --platform linux/x86_64 -t my-node-ubuntu .
+   ```
+
+4. **aiexeauto 설치**
 
    **Windows**의 경우:
    1. 윈도우 검색창에서 "PowerShell"을 검색하여 실행합니다
@@ -71,37 +101,13 @@ aiexeauto config model "claude-3-5-sonnet-20241022" # 더 정교한 작업 수�
 # 실행 환경 설정
 aiexeauto config maxIterations 0                 # 반복 횟수 (0=무제한)
 aiexeauto config overwriteOutputDir false        # 출력 디렉토리 덮어쓰기 여부
+
+# Docker 설정 (선택사항)
+aiexeauto config useDocker true                  # Docker 사용 여부
+aiexeauto config dockerImage "my-node-ubuntu"    # Docker 이미지 이름
+aiexeauto config dockerWorkDir "/home/ubuntu/work" # Docker 작업 디렉토리
 ```
 
-### Docker 환경 설정 (선택사항, macOS 전용)
-
-1. **Docker 설치**
-   - [Docker Desktop](https://www.docker.com/) 웹사이트 방문
-   - macOS용 Docker Desktop 다운로드
-   - 다운로드한 파일 실행하여 설치
-
-2. **Docker 설정**
-   - Docker Desktop이 실행되고 있는지 상태바에서 확인
-   - 터미널에서 아래 명령어로 설치 확인:
-     ```bash
-     docker --version
-     ```
-   - 아래와 같이 Docker 버전 정보가 출력되면 정상 설치된 것입니다:
-     ```bash
-     Docker version 24.0.7, build afdd53b
-     ```
-
-3. **aiexeauto Docker 설정**
-     ```bash
-     aiexeauto config useDocker true
-     aiexeauto config dockerImage "my-node-ubuntu"
-     aiexeauto config dockerWorkDir "/home/ubuntu/work"
-     
-     # Docker 이미지 빌드
-     git clone https://github.com/kstost/aiexeauto.git
-     cd aiexeauto/my-docker-app
-     docker build --platform linux/x86_64 -t my-node-ubuntu .
-     ```
 
 ## 사용 방법
 
@@ -166,7 +172,7 @@ aiexeauto "<작업_설명>" <입력_경로> <출력_경로>
    - 경로 오류: 입/출력 경로가 올바른지 확인
    - 권한 오류: 필요한 디렉토리 접근 권한 확인
 
-2. **Docker 관련 오류** (macOS)
+2. **Docker 관련 오류**
    - Docker Desktop 실행 상태 확인
    - 이미지 빌드 상태 확인
    - 리소스 할당 상태 확인
