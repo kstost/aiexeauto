@@ -390,8 +390,7 @@ async function runCommandWithTimeout(command, timeoutMs = 10000) {
         setTimeout(() => reject(new Error(`Command timed out after ${timeoutMs / 1000} seconds`)), timeoutMs)
     );
     const executionPromise = (async () => {
-        const { stdout } = await execAsync(command);
-        return stdout;
+        return await execAsync(command);
     })();
     return await Promise.race([executionPromise, timeoutPromise]);
 }
@@ -401,7 +400,7 @@ export async function getDockerInfo() {
     try {
         const execAsync = promisify(exec);
         let command = `"${await getDockerCommand()}"` + " info --format '{{json .}}' 2>/dev/null";
-        if (isWindows()) command = `\\"${await getDockerCommand()}\\"` + " info --format '{{json .}}'";
+        if (isWindows()) command = `${await getDockerCommand()}` + " info --format '{{json .}}'";
         if (isWindows()) command = `"${await getPowershellCommand()}" -Command "${command}"`;
 
         let result;
