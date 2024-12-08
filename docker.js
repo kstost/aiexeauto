@@ -15,7 +15,16 @@ export async function executeInContainer(containerId, command, streamGetter = nu
             error: new Error('쌍따옴표는 허용되지 않습니다')
         };
     }
-    return await executeCommand('docker exec "' + containerId + '" /bin/sh -c "' + command + '"', streamGetter)
+    return await executeCommand('"' + (await getDockerCommand()) + '" exec "' + containerId + '" /bin/sh -c "' + command + '"', streamGetter)
+}
+async function getDockerCommand() {
+    if (!commandDocker) commandDocker = await whereCommand('docker');
+    return commandDocker;
+}
+async function getPowershellCommand() {
+    if (!isWindows()) return '';
+    if (!commandPowershell) commandPowershell = await whereCommand('powershell');
+    return commandPowershell;
 }
 
 function parseCommandLine(cmdline) {
@@ -84,15 +93,15 @@ export function executeCommandSync(command, args = []) {
         error: result.error
     };
 }
-let runner;
+let commandPowershell;
+let commandDocker;
 export async function executeCommand(command, streamGetter = null) {
     const khongLog = true;
-    if (!runner && isWindows()) runner = await wherePowershell();
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         let result;
         if (!isWindows()) result = parseCommandLine(command);
         if (isWindows()) result = {
-            command: runner,
+            command: await getPowershellCommand(),
             args: ['-Command', command]
         }
         const child = spawn(result.command, result.args, {
@@ -153,7 +162,7 @@ export async function importToDocker(containerId, workDir, inputDir) {
     let result = await executeInContainer(containerId, 'mkdir -p ' + workDir);
     if (result.code !== 0) throw new Error('작업 디렉토리 생성 실패');
 
-    result = await executeCommand('docker cp "' + inputDir + '/." "' + containerId + ':' + workDir + '"');
+    result = await executeCommand('"' + (await getDockerCommand()) + '" cp "' + inputDir + '/." "' + containerId + ':' + workDir + '"');
     if (result.code !== 0) throw new Error('input 폴더 복사 실패');
 }
 
@@ -178,7 +187,7 @@ export async function exportFromDocker(containerId, workDir, outputDir) {
     if (result.code !== 0) throw new Error('임시 파일 삭제 실패');
 
 
-    result = await executeCommand('docker cp "' + containerId + ':' + workDir + '/." "' + outputDir + '"');
+    result = await executeCommand('"' + (await getDockerCommand()) + '" cp "' + containerId + ':' + workDir + '/." "' + outputDir + '"');
     if (result.code !== 0) throw new Error('output 폴더로 복사 실패');
 }
 
@@ -238,8 +247,7 @@ export async function runPythonCode(containerId, workDir, code, requiredPackageN
     await fs.promises.writeFile(tmpPyFile, code);
 
     {
-        // console.log('docker cp "' + tmpPyFile + '" "' + containerId + ':' + workDir + '/' + pyFileName + '"');
-        let result = await executeCommand('docker cp "' + tmpPyFile + '" "' + containerId + ':' + workDir + '/' + pyFileName + '"');
+        let result = await executeCommand('"' + (await getDockerCommand()) + '" cp "' + tmpPyFile + '" "' + containerId + ':' + workDir + '/' + pyFileName + '"');
 
         if (result.code !== 0) throw new Error('임시 PY 파일 복사 실패');
     }
@@ -267,7 +275,7 @@ export async function runNodeJSCode(containerId, workDir, code, requiredPackageN
     await fs.promises.writeFile(tmpJsFile, code);
 
     {
-        let result = await executeCommand('docker cp "' + tmpJsFile + '" "' + containerId + ':' + workDir + '/' + jsFileName + '"');
+        let result = await executeCommand('"' + (await getDockerCommand()) + '" cp "' + tmpJsFile + '" "' + containerId + ':' + workDir + '/' + jsFileName + '"');
 
         if (result.code !== 0) throw new Error('임시 JS 파일 복사 실패');
     }
@@ -279,10 +287,10 @@ export async function runNodeJSCode(containerId, workDir, code, requiredPackageN
     return result;
 }
 export async function killDockerContainer(containerId) {
-    await executeCommand(`docker kill "${containerId}"`);
+    await executeCommand(`"${await getDockerCommand()}" kill "${containerId}"`);
 }
 export async function runDockerContainerDemon(dockerImage) {
-    let result = await executeCommand(`docker run -d --rm --platform linux/x86_64 "${dockerImage}" tail -f /dev/null`);
+    let result = await executeCommand(`"${await getDockerCommand()}" run -d --rm --platform linux/x86_64 "${dockerImage}" tail -f /dev/null`);
     if (result.code !== 0) throw new Error('컨테이너 시작 실패');
     return result.stdout.trim();
 }
@@ -308,7 +316,7 @@ export async function doesDockerImageExist(imageName) {
     try {
         if (!imageName) return false;
         if (imageName.includes('"')) return false;
-        const result = await executeCommand(`docker images --format '{{json .}}'`);
+        const result = await executeCommand(`"${await getDockerCommand()}" images --format '{{json .}}'`);
         if (result.code !== 0) return false;
         const images = result.stdout.split('\n')
             .filter(line => line.trim())
@@ -352,30 +360,52 @@ export async function doesDockerImageExist(imageName) {
 
 
 
-export async function wherePowershell() {
+export async function whereCommand(name) {
     const execAsync = promisify(exec);
-    const commands = [
-        'Where.exe powershell',
-        'Where.exe powershell.exe',
+    const commands = isWindows() ? [
+        `Where.exe ${name}`,
+        `Where.exe ${name}.exe`,
+    ] : [
+        `which ${name}`,
     ];
     for (const command of commands) {
         const result = await execAsync(command);
         let picked = result?.stdout?.trim();
-        if (picked) return picked;
+        if (picked) {
+            return picked;
+        }
     }
-    return 'powershell';
+    return name;
 }
 
 
+async function runCommandWithTimeout(command, timeoutMs = 10000) {
+    const execAsync = promisify(exec);
+    const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Command timed out after ${timeoutMs / 1000} seconds`)), timeoutMs)
+    );
+    const executionPromise = (async () => {
+        const { stdout } = await execAsync(command);
+        return stdout;
+    })();
+    return await Promise.race([executionPromise, timeoutPromise]);
+}
+
 
 export async function getDockerInfo() {
-    if (!runner && isWindows()) runner = await wherePowershell();
     try {
         const execAsync = promisify(exec);
-        let command = "docker info --format '{{json .}}' 2>/dev/null";
-        if (isWindows()) command = "docker info --format '{{json .}}'";
-        if (isWindows()) command = `${runner} -Command "${command}"`;
-        const { stdout } = await execAsync(command);
+        let command = `"${await getDockerCommand()}"` + " info --format '{{json .}}' 2>/dev/null";
+        if (isWindows()) command = `"${await getDockerCommand()}"` + " info --format '{{json .}}'";
+        if (isWindows()) command = `"${await getPowershellCommand()}" -Command "${command}"`;
+
+        let result;
+        if (!isWindows()) {
+            result = await execAsync(command);
+        } else {
+            try { result = await runCommandWithTimeout(command); } catch { }
+        }
+        let stdout = result?.stdout;
         if (!stdout) {
             throw new Error('도커 정보를 가져올 수 없습니다.');
         }
@@ -386,7 +416,6 @@ export async function getDockerInfo() {
             isRunning
         };
     } catch (error) {
-        console.error('도커 정보 조회 실패:', error.message);
         return {
             isRunning: false,
             error: error.message

@@ -25,7 +25,7 @@ const startPort = process.env.PORT || 8080;
 let server;
 let prompt = process.argv[2];
 if (prompt === 'version') {
-    console.log('1.0.24');
+    console.log('1.0.25');
     process.exit(0);
 } else if (prompt === 'config') {
     let configKey = process.argv[3];
@@ -80,14 +80,6 @@ if (prompt === 'version') {
 
         try {
             const PORT = await findAvailablePort(startPort);
-            console.log(boxen(prompt, {
-                padding: 0,
-                margin: 0,
-                borderStyle: 'double',
-                borderColor: 'green',
-                title: '수행 미션',
-                titleAlignment: 'center'
-            }));
             server = app.listen(PORT, async () => {
                 await solveLogic({ PORT, server, multiLineMission: prompt, dataSourcePath, dataOutputPath });
                 if (dataSourceNotAssigned) await flushFolder([dataSourcePath]);

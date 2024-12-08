@@ -309,6 +309,15 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
         }
         let browser, page;
 
+        console.log(boxen(prompt, {
+            padding: 0,
+            margin: 0,
+            borderStyle: 'double',
+            borderColor: 'green',
+            title: '수행 미션',
+            titleAlignment: 'center'
+        }));
+
         // 브라우저 시작 스피너
         if (!await getConfiguration('useDocker')) {
             spinners.browser = createSpinner('브라우저를 시작하는 중...');
