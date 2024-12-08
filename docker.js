@@ -396,7 +396,7 @@ export async function getDockerInfo() {
     try {
         const execAsync = promisify(exec);
         let command = `"${await getDockerCommand()}"` + " info --format '{{json .}}' 2>/dev/null";
-        if (isWindows()) command = `"${await getDockerCommand()}"` + " info --format '{{json .}}'";
+        if (isWindows()) command = `\\"${await getDockerCommand()}\\"` + " info --format '{{json .}}'";
         if (isWindows()) command = `"${await getPowershellCommand()}" -Command "${command}"`;
 
         let result;
