@@ -25,7 +25,7 @@ const startPort = process.env.PORT || 8080;
 let server;
 let prompt = process.argv[2];
 if (prompt === 'version') {
-    console.log('1.0.25');
+    console.log('1.0.26');
     process.exit(0);
 } else if (prompt === 'config') {
     let configKey = process.argv[3];
@@ -98,7 +98,17 @@ if (prompt === 'version') {
                         }
                     }
                     let outputPath = await prepareOutputDir(outputCandidate, over, true);
-                    await fs.promises.rename(dataOutputPath, outputPath);
+                    try {
+                        await fs.promises.rename(dataOutputPath, outputPath);
+                    } catch (err) {
+                        if (err.code === 'EXDEV') {
+                            // 다른 디바이스/파티션간 이동시 복사 후 삭제 방식 사용
+                            await fs.promises.cp(dataOutputPath, outputPath, { recursive: true });
+                            await fs.promises.rm(dataOutputPath, { recursive: true });
+                        } else {
+                            throw err;
+                        }
+                    }
                     console.log(chalk.green(`결과물이 저장된 경로: ${chalk.bold(outputPath)}`));
                 }
             });
