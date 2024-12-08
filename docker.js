@@ -18,6 +18,7 @@ export async function executeInContainer(containerId, command, streamGetter = nu
     return await executeCommand('"' + (await getDockerCommand()) + '" exec "' + containerId + '" /bin/sh -c "' + command + '"', streamGetter)
 }
 async function getDockerCommand() {
+    return 'docker';
     if (!commandDocker) commandDocker = await whereCommand('docker');
     return commandDocker;
 }
