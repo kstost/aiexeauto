@@ -371,6 +371,10 @@ export async function whereCommand(name) {
     for (const command of commands) {
         const result = await execAsync(command);
         let picked = result?.stdout?.trim();
+        if (!picked) picked = '';
+        picked = picked.trim();
+        picked = picked.split('\n')[0];
+        picked = picked.trim();
         if (picked) {
             return picked;
         }
