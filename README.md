@@ -47,7 +47,7 @@ YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 �
    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
 
    # 디렉토리 생성
-   mkdir -p my-docker-app
+   New-Item -ItemType Directory -Path "my-docker-app" -Force
 
    # 작업 디렉토리 이동
    cd my-docker-app
