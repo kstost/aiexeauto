@@ -53,7 +53,7 @@ YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 �
    cd my-docker-app
 
    # Dockerfile 다운로드
-   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/kstost/aiexeauto/refs/heads/main/my-docker-app/Dockerfile" -OutFile "my-docker-app/Dockerfile"
+   Invoke-WebRequest -Uri "https://raw.githubusercontent.com/kstost/aiexeauto/refs/heads/main/my-docker-app/Dockerfile" -OutFile "Dockerfile"
 
    # Docker 이미지 빌드
    docker build --platform linux/x86_64 -t my-node-ubuntu .
