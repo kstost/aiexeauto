@@ -309,7 +309,7 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
         }
         let browser, page;
 
-        console.log(boxen(prompt, {
+        console.log(boxen(multiLineMission, {
             padding: 0,
             margin: 0,
             borderStyle: 'double',
