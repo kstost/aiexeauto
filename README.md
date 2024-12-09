@@ -55,6 +55,8 @@ YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 �
 
    # Docker 이미지 빌드
    docker build --platform linux/x86_64 -t my-node-ubuntu .
+
+   # 
    ```
 
 4. **aiexeauto 설치**
