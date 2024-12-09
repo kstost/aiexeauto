@@ -36,9 +36,7 @@ YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 �
 
    **macOS**의 경우:
    ```bash
-   git clone https://github.com/kstost/aiexeauto.git
-   cd aiexeauto/my-docker-app
-   docker build --platform linux/x86_64 -t my-node-ubuntu .
+   git clone https://github.com/kstost/aiexeauto.git && cd aiexeauto/my-docker-app && docker build --platform linux/x86_64 -t my-node-ubuntu .
    ```
 
    **Windows**의 경우 윈도우 검색창에서 "PowerShell"을 검색하여 관리자 권한으로 실행 후 아래 명령어를 실행합니다:
