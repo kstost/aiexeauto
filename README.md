@@ -104,7 +104,7 @@ aiexeauto config model "claude-3-5-haiku-20241022"  # 빠르고 경제적
 aiexeauto config model "claude-3-5-sonnet-20241022" # 더 정교한 작업 수행
 
 # DeepSeek-AI 모델 설정
-aiexeauto config model "deepseek-chat"
+aiexeauto config deepseekModel "deepseek-chat"
 
 # 실행 환경 설정
 aiexeauto config maxIterations 0                 # 반복 횟수 (0=무제한)

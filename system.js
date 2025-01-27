@@ -36,7 +36,9 @@ export async function getConfiguration(key) {
 export async function loadConfiguration() {
     let config = {
         claudeApiKey: "",
+        deepseekApiKey: "",
         model: "claude-3-5-haiku-20241022",
+        deepseekModel: "deepseek-chat",
         llm: "claude",
         maxIterations: 0,
         dockerImage: 'my-node-ubuntu',

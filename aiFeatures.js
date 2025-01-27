@@ -238,7 +238,8 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
             }
         }
     }
-    const model = await getConfiguration('model');
+    const llm = await getConfiguration('llm');
+    const model = llm === 'claude' ? await getConfiguration('model') : await getConfiguration('deepseekModel');
     const responseData = await requestChatCompletion(systemPrompt, promptList, model);
     return responseData;
 }
