@@ -139,8 +139,6 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                     }
                 })
             }
-            console.log('tools', JSON.stringify(tools, null, 2));
-
             const data = {
                 model: model,
                 messages: promptList.map(p => ({
@@ -159,10 +157,7 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                     body: JSON.stringify(data)
                 });
                 let result = await response.text();
-                console.log('result!!!', result);
                 result = JSON.parse(result);
-                console.log('result', JSON.stringify(result, null, 2));
-                // process.exit(0);
                 const errorMessage = result?.error?.message || '';
                 if (errorMessage) {
                     if (errorMessage.includes('rate limit') || errorMessage.includes('Overloaded')) {
