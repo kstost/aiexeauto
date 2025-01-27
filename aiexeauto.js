@@ -59,7 +59,7 @@ if (prompt === 'version') {
         const overwriteOutputDir = await getConfiguration('overwriteOutputDir');
         if (await getConfiguration('useDocker')) validatePath(dockerWorkDir, 'Docker 작업 경로');
 
-        if (llm !== 'claude') {
+        if (llm !== 'claude' && llm !== 'deepseek') {
             console.log('현재는 Anthropic의 Claude 모델만 지원합니다. 미안해.');
             process.exit(1);
         }

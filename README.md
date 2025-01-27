@@ -77,25 +77,34 @@ YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 �
 
 ## 기본 설정
 
-**aiexeauto**는 Anthropic의 Claude AI 모델을 사용합니다.
+**aiexeauto**는 Anthropic의 Claude AI 모델과 DeepSeek AI 모델을 지원합니다.
 
-### API 키 발급
+### API 키 발급 (Claude의 경우)
 
 1. [Claude API Console](https://console.anthropic.com/settings/keys)에 접속
 2. 계정 생성 및 로그인
 3. [결제 설정 페이지](https://console.anthropic.com/settings/billing)에서 신용카드 등록 및 비용 결제 설정
 4. API 키 발급
 
+### API 키 발급 (DeepSeek의 경우)
+
+1. [DeepSeek API Console](https://platform.deepseek.com/api_keys)에 접속
+2. 계정 생성 및 로그인
+3. API 키 발급
+
 ### 설정 명령어
 
 ```bash
 # 필수 설정
 aiexeauto config claudeApiKey "sk-ant-api..."    # Claude API 키 설정
+aiexeauto config deepseekApiKey "sk-..."  # DeepSeek API 키 설정
 
-# AI 모델 설정
+# Claude-AI 모델 설정
 aiexeauto config model "claude-3-5-haiku-20241022"  # 빠르고 경제적
-# 또는
 aiexeauto config model "claude-3-5-sonnet-20241022" # 더 정교한 작업 수행
+
+# DeepSeek-AI 모델 설정
+aiexeauto config model "deepseek-chat"
 
 # 실행 환경 설정
 aiexeauto config maxIterations 0                 # 반복 횟수 (0=무제한)
@@ -155,9 +164,13 @@ aiexeauto "<작업_설명>" <입력_경로> <출력_경로>
 2. **인터넷과 보안**
    - AIEXEAUTO에서 기본적으로 준비하는 가상환경은 인터넷 공간에 연결되어있으며 AI는 인터넷 세계에 연결되어 현실세계에서 활동할 가능성이 존재하므로 이 부분에 주의해주시기 바랍니다.
 
-3. **비용**
+3. **비용 - Claude**
    - Claude API 사용에 따른 비용 발생
    - [Claude 요금제 확인](https://www.anthropic.com/pricing#anthropic-api)
+
+4. **비용 - DeepSeek**
+   - DeepSeek API 사용에 따른 비용 발생
+   - [DeepSeek 요금제 확인](https://api-docs.deepseek.com/quick_start/pricing)
 
 ## 문제 해결
 
