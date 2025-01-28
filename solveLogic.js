@@ -726,7 +726,9 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                 spinner.fail('작업이 중단되었습니다.');
             }
         });
-        // console.error('오류가 발생했습니다:', err);
+        if (await getConfiguration('trackLog')) {
+            console.error(err);
+        }
         console.error(chalk.red('✖'), chalk.redBright(err.message));
         process.exit(1);
     }

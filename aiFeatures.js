@@ -2,7 +2,8 @@ import { getAppPath, convertJsonToResponseFormat, getConfiguration, getToolList,
 import fs from 'fs';
 
 async function leaveLog({ callMode, data }) {
-    return;
+    const trackLog = await getConfiguration('trackLog');
+    if (!trackLog) return;
     if (false) {
         const aiLogFolder = getAppPath('logs');
         if (!fs.existsSync(aiLogFolder)) fs.mkdirSync(aiLogFolder);
@@ -125,7 +126,72 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
         }
         let tools = toolsList[callMode];
 
+        const requestAI = async (llm, callMode, data, url, headers) => {
+            while (true) {
+                await leaveLog({ callMode, data });
+                let response;
+                try {
+                    response = await fetch(url, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(data)
+                    });
+                } catch (err) {
+                    await leaveLog({ callMode, data: { resultError: err } });
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    continue;
+                }
+                let result = await response.text();
+                await leaveLog({ callMode, data: { resultText: result } });
+                try {
+                    result = JSON.parse(result);
+                } catch {
+                    await leaveLog({ callMode, data: { resultErrorJSON: result } });
+                    await new Promise(resolve => setTimeout(resolve, 5000));
+                    continue;
+                }
+                const errorMessage = result?.error?.message || '';
+                if (errorMessage) {
+                    if (errorMessage.includes('rate limit') || errorMessage.includes('Overloaded')) {
+                        await leaveLog({ callMode, data: { resultErrorSystem: result } });
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+                        continue;
+                    }
+                    throw new Error(errorMessage);
+                }
+                if (llm === 'claude') {
+                    if (tools) {
+                        try {
+                            let data = result?.content?.filter(c => c.type === 'tool_use')[0];
+                            if (!data) throw null;
+                            return data;
+                        } catch {
+                            continue;
+                        }
+                    }
+                    let text = result?.content?.[0]?.text;
+                    return text || '';
+                }
+                if (llm === 'deepseek') {
+                    if (tools) {
+                        try {
+                            let toolCall = result?.choices?.[0]?.message?.tool_calls?.[0];
+                            if (!toolCall) throw null;
+                            return {
+                                type: 'tool_use',
+                                name: toolCall.function.name,
+                                input: JSON.parse(toolCall.function.arguments)
+                            };
+                        } catch {
+                            continue;
+                        }
+                    }
+                    let text = result?.choices?.[0]?.message?.content;
+                    return text || '';
+                }
+            }
 
+        };
 
 
         if (llm === 'deepseek') {
@@ -151,7 +217,6 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                     content: p.content
                 })),
                 tools: tools,
-                // tool_choice: tool_choice_list[callMode]
             };
             data.messages = [
                 {
@@ -160,42 +225,7 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                 },
                 ...data.messages
             ];
-
-            while (true) {
-                await leaveLog({ callMode, data });
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(data)
-                });
-                let result = await response.text();
-                result = JSON.parse(result);
-                const errorMessage = result?.error?.message || '';
-                if (errorMessage) {
-                    if (errorMessage.includes('rate limit') || errorMessage.includes('Overloaded')) {
-                        await new Promise(resolve => setTimeout(resolve, 5000));
-                        continue;
-                    }
-                    throw new Error(errorMessage);
-                }
-
-                if (tools) {
-                    try {
-                        let toolCall = result?.choices?.[0]?.message?.tool_calls?.[0];
-                        if (!toolCall) throw null;
-                        return {
-                            type: 'tool_use',
-                            name: toolCall.function.name,
-                            input: JSON.parse(toolCall.function.arguments)
-                        };
-                    } catch {
-                        continue;
-                    }
-                }
-
-                let text = result?.choices?.[0]?.message?.content;
-                return text || '';
-            }
+            return await requestAI(llm, callMode, data, url, headers);
         }
         if (llm === 'claude') {
             const url = "https://api.anthropic.com/v1/messages";
@@ -216,38 +246,7 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                 tools: tools,
                 tool_choice: tool_choice_list[callMode]
             };
-            while (true) {
-                await leaveLog({ callMode, data });
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(data)
-                });
-                const result = await response.json();
-                const errorMessage = result?.error?.message || '';
-                if (errorMessage) {
-                    if (errorMessage.includes('rate limit')) {
-                        await new Promise(resolve => setTimeout(resolve, 5000));
-                        continue;
-                    }
-                    if (errorMessage.includes('Overloaded')) {
-                        await new Promise(resolve => setTimeout(resolve, 5000));
-                        continue;
-                    }
-                    throw new Error(errorMessage);
-                }
-                if (tools) {
-                    try {
-                        let data = result?.content?.filter(c => c.type === 'tool_use')[0];
-                        if (!data) throw null;
-                        return data;
-                    } catch {
-                        continue;
-                    }
-                }
-                let text = result?.content?.[0]?.text;
-                return text || '';
-            }
+            return await requestAI(llm, callMode, data, url, headers);
         }
     }
     const model = await getModel();
