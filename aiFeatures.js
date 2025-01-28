@@ -148,6 +148,13 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                 tools: tools,
                 // tool_choice: tool_choice_list[callMode]
             };
+            data.messages = [
+                {
+                    role: "system",
+                    content: systemPrompt
+                },
+                ...data.messages
+            ];
 
             while (true) {
                 await leaveLog({ callMode, data });
