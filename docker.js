@@ -4,7 +4,7 @@ import fs from 'fs';
 import { spawn, spawnSync } from 'child_process';
 import { getAbsolutePath, getAppPath, isWindows, getConfiguration } from './system.js';
 import chalk from 'chalk';
-
+import { setHandler, removeHandler } from './sigintManager.js';
 export async function executeInContainer(containerId, command, streamGetter = null) {
     if (command.includes('"')) {
         return {
@@ -113,6 +113,7 @@ export async function executeCommand(command, streamGetter = null) {
         let stderr = '';
         let output = '';
         const broadCaster = (str, type) => {
+            if (killed) return;
             if (!streamGetter) return;
             if (streamGetter.constructor !== Function) return;
             // if (type === 'stdout') str = chalk.hex('#aaaaaa')(str);
@@ -121,6 +122,22 @@ export async function executeCommand(command, streamGetter = null) {
             // console.log('tpaaa', type, str);
             streamGetter(str);
         }
+
+        // Ctrl+C 핸들러 추가
+        let killed = false;
+        const handleCtrlC = () => {
+            if (killed) return;
+            killed = true;
+            child.kill('SIGINT'); // 자식 프로세스에 SIGINT 시그널 전송
+            reject({
+                stdout: `${stdout}\n---\nOperation interrupted by user.`,
+                stderr: `${stderr}\n---\nOperation interrupted by user.`,
+                output: `${output}\n---\nOperation interrupted by user.`,
+                code: 130, // SIGINT 시그널의 표준 종료 코드
+                error: null
+            });
+        };
+        setHandler(handleCtrlC);
 
         child.stdout.on('data', (data) => {
             if (!khongLog) console.log('execution_stdout', data.toString());
@@ -140,6 +157,7 @@ export async function executeCommand(command, streamGetter = null) {
 
         child.on('error', (error) => {
             if (!khongLog) console.log('execution_error', error);
+            removeHandler(handleCtrlC);
             reject(error);
         });
         child.on('exit', (code) => {
@@ -148,6 +166,7 @@ export async function executeCommand(command, streamGetter = null) {
 
         child.on('close', (code) => {
             if (!khongLog) console.log('execution_close', code);
+            removeHandler(handleCtrlC);
             resolve({
                 stdout,
                 stderr,

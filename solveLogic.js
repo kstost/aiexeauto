@@ -19,6 +19,13 @@ import { getConfiguration } from './system.js';
 let containerId;
 let spinners = {};
 
+export function getSpinners() {
+    return spinners;
+}
+export function getContainerId() {
+    return containerId;
+}
+
 // Collecting prompts in one place
 const prompts = {
     systemPrompt: async (mission, whattodo, useDocker) => [
@@ -121,30 +128,13 @@ const highlightCode = (code, language) => {
 };
 
 // 스피너 생성 함수
-const createSpinner = (text, spinnerType = 'dots') => {
+export const createSpinner = (text, spinnerType = 'dots') => {
     const spinner = ora({
         text,
         color: 'cyan',
         spinner: spinnerType,
         stream: process.stdout // 명시적으로 출력 스트림 지정
     }).start();
-
-    // 기존 SIGINT 핸들러 제거 및 새로운 핸들러 등록
-    process.removeAllListeners('SIGINT');
-    process.on('SIGINT', async () => {
-        spinner.stop();
-        console.log('\n작업이 사용자에 의해 중단되었습니다.');
-        if (containerId) {
-            spinners.docker = createSpinner('도커 컨테이너를 종료하는 중...');
-            await killDockerContainer(containerId);
-            if (spinners.docker) {
-                spinners.docker.succeed('도커 컨테이너가 종료되었습니다.');
-            }
-        }
-
-        process.exit(1);
-    });
-
     return spinner;
 };
 
@@ -635,7 +625,8 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             if (!useDocker) spinners.iter = createSpinner('코드를 실행하는 중...', 'line');
             if (useDocker) console.log('📊 코드를 실행합니다');
             let result;
-            {
+            let killed = false;
+            try {
                 const streamGetter = (str) => useDocker && process.stdout.write(str);
                 if (!pythonCode && javascriptCode) {
                     let javascriptCodeToRun = javascriptCodeBack ? javascriptCodeBack : javascriptCode;
@@ -649,10 +640,14 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                         result = await runPythonCode(containerId, dockerWorkDir, pythonCode, requiredPackageNames, streamGetter);
                     }
                 }
+            } catch (error) {
+                killed = true;
+                result = error
             }
+            // console.log('result', result);
 
-            if (useDocker) spinners.iter = createSpinner(`실행 #${iterationCount}차 완료`);
-            if (spinners.iter) spinners.iter.succeed(`실행 #${iterationCount}차 완료`);
+            if (useDocker) spinners.iter = createSpinner(`실행 #${iterationCount}차 ${killed ? '중단' : '완료'}`);
+            if (spinners.iter) spinners.iter.succeed(`실행 #${iterationCount}차 ${killed ? '중단' : '완료'}`);
             processTransactions.push({ class: 'code', data: javascriptCode });
 
             // 결과 출력 및 평가
