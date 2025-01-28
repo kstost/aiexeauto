@@ -364,11 +364,13 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
             let whatdidwedo = '';
             let whattodo = '';
             let validationMode = nextCodeForValidation ? true : false;
+            let modelName = await getModel();
+
 
             if (!validationMode) {
                 processTransactions.length === 0 && processTransactions.push({ class: 'output', data: null });
                 if (processTransactions.length > 1) {
-                    spinners.iter = createSpinner('작업 회고 중...');
+                    spinners.iter = createSpinner(`${modelName}가 작업 회고 중...`);
                     whatdidwedo = await chatCompletion(
                         'As an AI agent, analyze what has been done so far',
                         makeRealTransaction(multiLineMission, 'whatdidwedo'),
@@ -377,23 +379,23 @@ export async function solveLogic({ PORT, server, multiLineMission, dataSourcePat
                     if (whatdidwedo) whatdidwedo = whatdidwedo.split('\n').map(a => a.trim()).filter(Boolean).join('\n');
                     if (spinners.iter) spinners.iter.succeed('작업 회고 완료.');
                 }
-                spinners.iter = createSpinner('다음 계획수립 중...');
+                spinners.iter = createSpinner(`${modelName}가 다음 계획수립 중...`);
                 whattodo = await chatCompletion(
                     "당신은 미션 완수를 위해 다음으로 해야 할 단 한 가지의 작업만을 제공하는 AI 비서입니다. 지금까지의 진행 상황과 이전 작업의 결과를 고려하세요. 코드나 불필요한 내용은 제외하고, 한국어로 한 문장만 응답하세요. 선택적인 작업은 생략합니다.",
                     makeRealTransaction(multiLineMission, 'whattodo'),
                     'whatToDo'
                 );
-                if (spinners.iter) spinners.iter.succeed('다음 계획수립 완료.');
+                if (spinners.iter) spinners.iter.succeed(`${modelName}가 다음 계획수립 완료.`);
                 if (whattodo) whattodo = whattodo.split('\n').map(a => a.trim()).filter(Boolean).join('\n');
                 if (whatdidwedo) console.log(chalk.bold.cyan(`📃${whatdidwedo}`));
                 console.log(chalk.bold.yellowBright(`📌${whattodo}`));
-                spinners.iter = createSpinner('AI가 코드를 생성하는 중...');
+                spinners.iter = createSpinner(`${modelName}가 코드를 생성하는 중...`);
                 let actData = await chatCompletion(
                     await prompts.systemPrompt(multiLineMission, whattodo, useDocker),
                     makeRealTransaction(multiLineMission, 'coding', whatdidwedo, whattodo, evaluationText),
                     'generateCode'
                 );
-                if (spinners.iter) spinners.iter.succeed(`AI가 코드 생성을 완료(${actData.name})했습니다`);
+                if (spinners.iter) spinners.iter.succeed(`${modelName}가 코드 생성을 완료(${actData.name})했습니다`);
                 if (actData.name === 'generate_nodejs_code') {
                     javascriptCode = actData.input.nodejs_code;
                     requiredPackageNames = actData.input.npm_package_list;

@@ -25,6 +25,11 @@ async function leaveLog({ callMode, data }) {
         fs.writeFileSync(`${aiLogFolder}/${date}.json`, JSON.stringify(data, undefined, 3));
     }
 }
+export async function getModel() {
+    const llm = await getConfiguration('llm');
+    const model = llm === 'claude' ? await getConfiguration('model') : await getConfiguration('deepseekModel');
+    return model;
+}
 export async function chatCompletion(systemPrompt, promptList, callMode) {
     async function requestChatCompletion(systemPrompt, promptList, model) {
         const llm = await getConfiguration('llm');
@@ -245,8 +250,7 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
             }
         }
     }
-    const llm = await getConfiguration('llm');
-    const model = llm === 'claude' ? await getConfiguration('model') : await getConfiguration('deepseekModel');
+    const model = await getModel();
     const responseData = await requestChatCompletion(systemPrompt, promptList, model);
     return responseData;
 }
