@@ -8,7 +8,7 @@ import boxen from 'boxen';
 import axios from 'axios';
 
 import { importData, exportData } from './dataHandler.js';
-import { chatCompletion } from './aiFeatures.js';
+import { chatCompletion, getModel } from './aiFeatures.js';
 import { isInstalledNpmPackage, installNpmPackage, checkValidSyntaxJavascript, stripFencedCodeBlocks, runCode, getRequiredPackageNames } from './codeExecution.js';
 import { getLastDirectoryName } from './dataHandler.js';
 import { getDockerInfo, runDockerContainer, killDockerContainer, runDockerContainerDemon, importToDocker, exportFromDocker, isInstalledNodeModule, installNodeModules, runNodeJSCode, runPythonCode, doesDockerImageExist, isInstalledPythonModule, installPythonModules } from './docker.js';
