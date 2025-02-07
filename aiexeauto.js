@@ -25,7 +25,7 @@ const startPort = process.env.PORT || 8080;
 let server;
 let prompt = process.argv[2];
 if (prompt === 'version') {
-    console.log('1.0.33');
+    console.log('1.0.34');
     process.exit(0);
 } else if (prompt === 'config') {
     let configKey = process.argv[3];
@@ -59,8 +59,8 @@ if (prompt === 'version') {
         const overwriteOutputDir = await getConfiguration('overwriteOutputDir');
         if (await getConfiguration('useDocker')) validatePath(dockerWorkDir, 'Docker 작업 경로');
 
-        if (llm !== 'claude' && llm !== 'deepseek') {
-            console.log('현재는 Anthropic의 Claude 모델만 지원합니다. 미안해.');
+        if (llm !== 'claude' && llm !== 'deepseek' && llm !== 'openai') {
+            console.log('현재는 Anthropic, DeepSeek, OpenAI만 지원합니다. 미안해.');
             process.exit(1);
         }
         if (fs.existsSync(getAbsolutePath(prompt))) {

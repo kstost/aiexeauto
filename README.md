@@ -1,203 +1,218 @@
 # aiexeauto
 
-**aiexeauto**는 자율적으로 사고하고 행동하는 인공지능 에이전트입니다. 사람의 자연어 명령을 이해하고 스스로 판단하여 컴퓨터 작업을 수행하는 혁신적인 CLI 도구입니다. 복잡한 작업도 AI 에이전트가 상황을 분석하고 최적의 방법을 찾아 자동으로 처리합니다.
+**aiexeauto** is an autonomous AI agent that thinks and acts on its own. It is an innovative CLI tool that understands natural language commands and automatically performs computer tasks after analyzing how best to do them. Even complex tasks are handled automatically by the AI agent, which analyzes the situation and finds the optimal approach.
 
-## 주요 기능
+## Key Features
 
-- **자연어로 컴퓨터 제어**: "파일 정리해줘", "동영상 편집해줘"처럼 일상적인 말로 지시하면 AI가 알아서 실행
-- **복잡한 작업도 자동으로**: 파일 관리, 이미지 편집, 문서 작업 등 번거로운 컴퓨터 작업을 AI가 대신 처리
-- **Windows/Mac 모두 사용 가능**: 주요 운영체제를 모두 지원
-- **작업 진행 상황 실시간 확인**: AI가 무엇을 하고 있는지 실시간으로 보여주는 깔끔한 화면 제공
+- **Control your computer with natural language**: Simply say things like “clean up these files” or “edit the video for me,” and the AI takes care of it automatically.
+- **Automate complex tasks**: Whether it’s file management, image editing, or document tasks, the AI does the tedious work for you.
+- **Works on both Windows/Mac**: Supports all major operating systems.
+- **Real-time progress updates**: Displays a neat interface so you can see exactly what the AI is doing.
 
-## 데모 영상 보기
+## Demo Video
 
-YouTube에서 **aiexeauto**의 기능을 한눈에 확인할 수 있는 데모 영상을 시청해보세요!.  
-[여기](https://www.youtube.com/watch?v=GkOZ6fG99RI)를 클릭하여 영상을 시청할 수 있습니다.  
-[![비디오 라벨](http://img.youtube.com/vi/GkOZ6fG99RI/0.jpg)](https://www.youtube.com/watch?v=GkOZ6fG99RI)
+Watch the demo video on YouTube to see **aiexeauto** in action!  
+[Click here](https://www.youtube.com/watch?v=GkOZ6fG99RI) to watch.  
+[![Video Label](http://img.youtube.com/vi/GkOZ6fG99RI/0.jpg)](https://www.youtube.com/watch?v=GkOZ6fG99RI)
 
-## 시스템 요구사항
+## System Requirements
 
 - **Node.js**
-- **운영체제**: 
+- **Operating System**: 
   - Windows
   - macOS
 - **Docker**
 
-## 설치 방법
+## Installation
 
-1. **Node.js 설치**
-   - [Node.js 공식 웹사이트](https://nodejs.org/)에서 최신 LTS 버전을 다운로드하여 설치
+1. **Install Node.js**
+   - Download and install the latest LTS version from [Node.js official website](https://nodejs.org/).
 
-2. **Docker 설치**
-   - [Docker Desktop](https://www.docker.com/)에서 최신 버전을 다운로드하여 설치
+2. **Install Docker**
+   - Download and install the latest version from [Docker Desktop](https://www.docker.com/).
 
-3. **Docker 이미지 빌드**
+3. **Build Docker Image**
 
-   **macOS**의 경우:
+   **For macOS**:
    ```bash
    git clone https://github.com/kstost/aiexeauto.git && cd aiexeauto/my-docker-app && docker build --platform linux/x86_64 -t my-node-ubuntu .
    ```
 
-   **Windows**의 경우 윈도우 검색창에서 "PowerShell"을 검색하여 관리자 권한으로 실행 후 아래 명령어를 실행합니다:
+   **For Windows**:  
+   1) Open the Start menu, type “PowerShell,” and run it as administrator.  
+   2) Then run the following commands:
+
    ```powershell
-   # 실행 정책 변경
+   # Change execution policy
    Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
 
-   # 디렉토리 생성
+   # Create directory
    New-Item -ItemType Directory -Path "my-docker-app" -Force
 
-   # 작업 디렉토리 이동
+   # Move to the working directory
    cd my-docker-app
 
-   # Dockerfile 다운로드
+   # Download Dockerfile
    Invoke-WebRequest -Uri "https://raw.githubusercontent.com/kstost/aiexeauto/refs/heads/main/my-docker-app/Dockerfile" -OutFile "Dockerfile"
 
-   # Docker 이미지 빌드
+   # Build Docker image
    docker build --platform linux/x86_64 -t my-node-ubuntu .
 
    # End
    ```
 
-4. **aiexeauto 설치**
+4. **Install aiexeauto**
 
-   **Windows**의 경우:
-   1. 윈도우 검색창에서 "PowerShell"을 검색하여 실행합니다
-   2. PowerShell 창이 열리면 아래 명령어를 복사해서 붙여넣고 Enter를 누릅니다:
+   **For Windows**:
+   1) Open Start menu, search for “PowerShell,” and run it.
+   2) Paste the command below and press Enter:
    ```powershell
    npm install -g aiexeauto
    ```
 
-   **macOS**의 경우:
-   1. Spotlight(⌘ + Space)에서 "터미널"을 검색하여 실행합니다
-   2. 터미널 창이 열리면 아래 명령어를 복사해서 붙여넣고 Enter를 누릅니다:
+   **For macOS**:
+   1) Open Spotlight (⌘ + Space), search for “Terminal,” and run it.
+   2) Paste the command below into the Terminal and press Enter:
    ```bash
    sudo npm install -g aiexeauto
    ```
-   3. 관리자 암호를 입력하라는 메시지가 나타나면 Mac의 로그인 비밀번호를 입력합니다
+   3) When prompted for the administrator password, enter your Mac login password.
 
-## 기본 설정
+## Basic Configuration
 
-**aiexeauto**는 Anthropic의 Claude AI 모델과 DeepSeek AI 모델을 지원합니다.
+**aiexeauto** supports Anthropic’s Claude AI model, DeepSeek AI model, and also OpenAI’s Chat Completions.
 
-### API 키 발급 (Claude의 경우)
+### Obtaining an API Key (Claude)
 
-1. [Claude API Console](https://console.anthropic.com/settings/keys)에 접속
-2. 계정 생성 및 로그인
-3. [결제 설정 페이지](https://console.anthropic.com/settings/billing)에서 신용카드 등록 및 비용 결제 설정
-4. API 키 발급
+1. Go to [Claude API Console](https://console.anthropic.com/settings/keys).
+2. Create an account and log in.
+3. Register a credit card on the [Billing Settings](https://console.anthropic.com/settings/billing) page.
+4. Obtain an API key.
 
-### API 키 발급 (DeepSeek의 경우)
+### Obtaining an API Key (DeepSeek)
 
-1. [DeepSeek API Console](https://platform.deepseek.com/api_keys)에 접속
-2. 계정 생성 및 로그인
-3. API 키 발급
+1. Go to [DeepSeek API Console](https://platform.deepseek.com/api_keys).
+2. Create an account and log in.
+3. Obtain an API key.
 
-### 설정 명령어
+### Obtaining an API Key (OpenAI)
+
+1. Go to [OpenAI](https://platform.openai.com/account/api-keys).
+2. Create an account and log in.
+3. Click “Create new secret key” to obtain an API key.
+
+### Configuration Commands
 
 ```bash
-# 필수 설정
-aiexeauto config claudeApiKey "sk-ant-api..."    # Claude API 키 설정
-aiexeauto config deepseekApiKey "sk-..."  # DeepSeek API 키 설정
+# Required configuration
+aiexeauto config claudeApiKey "sk-ant-api..."     # Claude API key
+aiexeauto config deepseekApiKey "sk-..."          # DeepSeek API key
+aiexeauto config openaiApiKey "sk-openai-..."     # OpenAI API key (newly added)
 
-# Claude-AI 모델 설정
-aiexeauto config model "claude-3-5-haiku-20241022"  # 빠르고 경제적
-aiexeauto config model "claude-3-5-sonnet-20241022" # 더 정교한 작업 수행
+# Claude-AI model settings
+aiexeauto config model "claude-3-5-haiku-20241022"  # Faster, cheaper
+aiexeauto config model "claude-3-5-sonnet-20241022" # More refined tasks
 
-# DeepSeek-AI 모델 설정
+# DeepSeek-AI model settings
 aiexeauto config deepseekModel "deepseek-chat"
 
-# 실행 환경 설정
-aiexeauto config maxIterations 0                 # 반복 횟수 (0=무제한)
-aiexeauto config overwriteOutputDir false        # 출력 디렉토리 덮어쓰기 여부
+# OpenAI model settings
+aiexeauto config openaiModel "gpt-4o"               # or "gpt-4o-mini"
 
-# Docker 설정 (선택사항)
-aiexeauto config useDocker true                  # Docker 사용 여부
-aiexeauto config dockerImage "my-node-ubuntu"    # Docker 이미지 이름
-aiexeauto config dockerWorkDir "/home/ubuntu/work" # Docker 작업 디렉토리
+# Choose which LLM to use (Claude, DeepSeek, or OpenAI)
+aiexeauto config llm "claude"
+aiexeauto config llm "deepseek"
+aiexeauto config llm "openai"
+
+# Execution environment settings
+aiexeauto config maxIterations 0                    # Number of iterations (0 = unlimited)
+aiexeauto config overwriteOutputDir false           # Whether to overwrite output directory
+
+# Docker settings (optional)
+aiexeauto config useDocker true                     # Use Docker or not
+aiexeauto config dockerImage "my-node-ubuntu"       # Docker image name
+aiexeauto config dockerWorkDir "/home/ubuntu/work"  # Docker working directory
 ```
 
+## How to Use
 
-## 사용 방법
-
-### 기본 명령어 구조
+### Basic Command Structure
 
 ```bash
-aiexeauto "<작업_설명>" <입력_경로> <출력_경로>
+aiexeauto "<task_description>" <input_directory> <output_directory>
 ```
 
-- **작업_설명**: 수행할 작업을 자연어로 설명 (또는 설명이 담긴 텍스트 파일 경로)
-- **입력_경로**: 작업에 필요한 데이터가 있는 디렉토리 (선택사항, 생략시 현재 디렉토리에 새 폴더 생성)
-- **출력_경로**: 결과물을 저장할 디렉토리 (선택사항, 생략시 입력 디렉토리가 위치한 디렉토리에 새 폴더 생성)
+- **task_description**: Describe the task to be performed in natural language (or a path to a text file containing the description).
+- **input_directory**: Directory containing the data needed for the task (optional; if omitted, a new folder is created in the current directory).
+- **output_directory**: Directory where results will be saved (optional; if omitted, a new folder is created in the same location as the input directory).
 
-### 사용 예시
+### Usage Examples
 
-1. **직접 명령어 입력**
+1. **Enter commands directly**
    ```bash
-   # 중복 파일 제거
-   aiexeauto "이 폴더에서 중복된 파일들을 찾아서 하나만 남기고 삭제해줘" ./data ./output
+   # Remove duplicate files
+   aiexeauto "Find duplicate files in this folder, keep only one copy and delete the rest." ./data ./output
    
-   # 이미지 처리
-   aiexeauto "모든 JPG 파일을 PNG로 변환하고 사이즈를 절반으로 줄여줘" ./images ./processed
+   # Image processing
+   aiexeauto "Convert all JPG files to PNG, then reduce their size by half." ./images ./processed
    
-   # 데이터 분석
-   aiexeauto "CSV 파일들을 분석해서 월별 매출 통계를 차트로 만들어줘" ./sales ./report
+   # Data analysis
+   aiexeauto "Analyze CSV files, generate a monthly sales report, and produce a chart." ./sales ./report
    ```
 
-2. **텍스트 파일로 명령어 입력**
+2. **Use a text file for the command**
    ```bash
-   # task.txt 파일에 작업 설명을 작성
+   # Write instructions in task.txt
    aiexeauto "task.txt" ./data ./output
    ```
 
-### 작업 설명 작성 팁
+### Tips for Writing Task Descriptions
 
-- **구체적으로 작성**: 원하는 결과를 명확하게 설명
-- **단계별 작성**: 복잡한 작업은 여러 단계로 나누어 설명
-- **조건 명시**: 특별한 조건이나 제약사항이 있다면 명확히 기술
+- **Be specific**: Clearly describe what you want done.
+- **Break down complex tasks**: For lengthy or complicated tasks, outline them step by step.
+- **Specify conditions**: If special constraints or requirements exist, mention them explicitly.
 
-## 주의사항
+## Precautions
 
-1. **데이터**
-   - 중요한 데이터는 반드시 백업 후 사용
-   - 실수로 인한 데이터 손실 가능성 있음
+1. **Data**
+   - Always back up important data before using.
+   - Accidental data loss may occur.
+2. **Internet and Security**
+   - By default, the AIEXEAUTO environment is connected to the internet, which can lead to real-world actions. Use with caution.
+3. **Costs - Claude**
+   - Using the Claude API incurs usage fees.
+   - See [Claude Pricing](https://www.anthropic.com/pricing#anthropic-api)
+4. **Costs - DeepSeek**
+   - Using the DeepSeek API incurs usage fees.
+   - See [DeepSeek Pricing](https://api-docs.deepseek.com/quick_start/pricing)
+5. **Costs - OpenAI**
+   - Using OpenAI’s API incurs usage fees.
+   - See [OpenAI Pricing](https://openai.com/pricing)
 
-2. **인터넷과 보안**
-   - AIEXEAUTO에서 기본적으로 준비하는 가상환경은 인터넷 공간에 연결되어있으며 AI는 인터넷 세계에 연결되어 현실세계에서 활동할 가능성이 존재하므로 이 부분에 주의해주시기 바랍니다.
+## Troubleshooting
 
-3. **비용 - Claude**
-   - Claude API 사용에 따른 비용 발생
-   - [Claude 요금제 확인](https://www.anthropic.com/pricing#anthropic-api)
+1. **Common Errors**
+   - API key error: Verify that you have set the correct API key.
+   - Path error: Check your input/output paths.
+   - Permission error: Make sure you have permission to access the necessary directories.
+2. **Docker-Related Errors**
+   - Check whether Docker Desktop is running.
+   - Check the Docker image build status.
+   - Check resource allocation settings.
+3. **Seeking Help**
+   - If you cannot resolve an issue, visit the [COKAC site](https://cokac.com) for assistance.
+   - The “coding old man” community can also help you troubleshoot.
 
-4. **비용 - DeepSeek**
-   - DeepSeek API 사용에 따른 비용 발생
-   - [DeepSeek 요금제 확인](https://api-docs.deepseek.com/quick_start/pricing)
+## License
 
-## 문제 해결
+This software is released under the MIT License. See the [LICENSE](LICENSE) file for more details.
 
-1. **일반적인 오류**
-   - API 키 오류: API 키가 올바르게 설정되었는지 확인
-   - 경로 오류: 입/출력 경로가 올바른지 확인
-   - 권한 오류: 필요한 디렉토리 접근 권한 확인
+## Contributing
 
-2. **Docker 관련 오류**
-   - Docker Desktop 실행 상태 확인
-   - 이미지 빌드 상태 확인
-   - 리소스 할당 상태 확인
+Bug reports, feature requests, and pull requests are welcome.
+- Use the GitHub issue tracker.
+- Include test code when contributing.
 
-3. **도움 요청**
-   - 문제 해결이 어려운 경우 [코드깎는노인 클래스](https://cokac.com)에 방문하여 도움을 요청할 수 있습니다.
-   - 코드깎는노인이 친절하게 도와드립니다.
+## Disclaimer
 
-## 라이선스
-
-MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일 참조
-
-## 기여하기
-
-버그 리포트, 기능 제안, 풀 리퀘스트 환영합니다.
-- GitHub 이슈 트래커 사용
-- 코드 기여 시 테스트 코드 포함
-
-## 면책 조항
-
-본 소프트웨어는 프로토타입 단계이며, 사용자는 모든 책임을 부담합니다. 중요한 데이터나 시스템에는 신중히 사용해주세요.
+This software is in a prototype stage, and you are responsible for its use. Use caution for critical data or systems.

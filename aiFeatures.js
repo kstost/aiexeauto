@@ -28,7 +28,13 @@ async function leaveLog({ callMode, data }) {
 }
 export async function getModel() {
     const llm = await getConfiguration('llm');
-    const model = llm === 'claude' ? await getConfiguration('model') : await getConfiguration('deepseekModel');
+    const model = llm === 'claude'
+        ? await getConfiguration('model')
+        : llm === 'deepseek'
+            ? await getConfiguration('deepseekModel')
+            : llm === 'openai'
+                ? await getConfiguration('openaiModel')
+                : null;
     return model;
 }
 export async function chatCompletion(systemPrompt, promptList, callMode) {
@@ -36,11 +42,16 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
         const llm = await getConfiguration('llm');
         let claudeApiKey = await getConfiguration('claudeApiKey');
         let deepseekApiKey = await getConfiguration('deepseekApiKey');
+        let openaiApiKey = await getConfiguration('openaiApiKey');
+
         let useDocker = await getConfiguration('useDocker');
         claudeApiKey = claudeApiKey.trim();
         deepseekApiKey = deepseekApiKey.trim();
+        openaiApiKey = openaiApiKey.trim();
+
         if (!claudeApiKey) throw new Error('Claude API 키가 설정되어 있지 않습니다.');
         if (!deepseekApiKey) throw new Error('DeepSeek API 키가 설정되어 있지 않습니다.');
+        if (!openaiApiKey) throw new Error('OpenAI API 키가 설정되어 있지 않습니다.');
 
 
         let tool_choice_list = {
@@ -189,9 +200,65 @@ export async function chatCompletion(systemPrompt, promptList, callMode) {
                     let text = result?.choices?.[0]?.message?.content;
                     return text || '';
                 }
+
+                // New branch for OpenAI
+                if (llm === 'openai') {
+                    if (tools) {
+                        try {
+                            let toolCall = result?.choices?.[0]?.message?.tool_calls?.[0];
+                            if (!toolCall) throw null;
+                            return {
+                                type: 'tool_use',
+                                name: toolCall.function.name,
+                                input: JSON.parse(toolCall.function.arguments)
+                            };
+                        } catch {
+                            continue;
+                        }
+                    }
+                    let text = result?.choices?.[0]?.message?.content;
+                    return text || '';
+                }
             }
 
         };
+
+
+        // => Now for openai:
+        if (llm === 'openai') {
+            // The request URL
+            const url = "https://api.openai.com/v1/chat/completions";
+            const headers = {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${openaiApiKey}`
+            };
+            if (tools) {
+                tools = JSON.parse(JSON.stringify(tools)).map(function_ => {
+                    function_.parameters = function_.input_schema;
+                    delete function_.input_schema;
+                    return {
+                        "type": "function",
+                        "function": function_
+                    }
+                })
+            }
+            const data = {
+                model: model,
+                messages: promptList.map(p => ({
+                    role: p.role === "assistant" ? "assistant" : "user",
+                    content: p.content
+                })),
+                tools: tools,
+            };
+            data.messages = [
+                {
+                    role: "system",
+                    content: systemPrompt
+                },
+                ...data.messages
+            ];
+            return await requestAI(llm, callMode, data, url, headers);
+        }
 
 
         if (llm === 'deepseek') {
